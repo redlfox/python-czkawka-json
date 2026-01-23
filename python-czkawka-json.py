@@ -1,3 +1,4 @@
+from html import parser
 from mimetypes import init
 import sys, time, re
 try:
@@ -10,6 +11,7 @@ import argparse
 import configparser
 from utils_s import get_encoding, writeToFile
 import pandas as pd
+import platform
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
 def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
@@ -101,12 +103,46 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 		return (CZFilesSources, CZFilesTargets)
 	else:
 		print("No valid files found to remove.")
-def generateSystemCLICommands(operation:str, source:Path, target:Path,forceExecute:bool) -> str:
-	if operation == "delete":
-		return f'del "{target}"'
+def generateSystemCLICommands(operation:str, source:Path, target:Path,forceConfirm:bool=False,gioTrash:bool=False) -> str:
+	SystemType=platform.system()
+	forceExecuteOption=""
+	if operation == "trash":
+		if SystemType == "Linux" or SystemType == "Darwin":
+			if not gioTrash:
+				return f'trash-put "{target}"'
+			elif gioTrash:
+				if forceConfirm:
+					forceExecuteOption="-f "
+				return f'gio trash {forceExecuteOption}"{target}"'
+		elif SystemType == "Windows":
+			print("Windows trash operation is not implemented yet.")
+			return f'"{target}"'
+	elif operation == "delete":
+		if SystemType == "Linux" or SystemType == "Darwin":
+			if not forceConfirm:
+				return f'rm -i "{target}"'
+			else:
+				return f'rm -f "{target}"'
+		elif SystemType == "Windows":
+			if not forceConfirm:
+				return f'del /P "{target}"'
+			else:
+				return f'del /F /Q "{target}"'
 	elif operation == "overwrite":
-		return f'copy /Y "{source}" "{target}"'
+		if SystemType == "Linux" or SystemType == "Darwin":
+			if not forceConfirm:
+				return f'cp -i "{source}" "{target}"'
+			else:
+				return f'cp -f "{source}" "{target}"'
+		elif SystemType == "Windows":
+			if forceConfirm:
+				forceExecuteOption="/Y "
+			return f'xcopy {forceExecuteOption}"{source}" "{target}"'
 	else:
+		print("Unknown file operation: ", operation)
+		return ""
+	if not (SystemType == "Linux" or SystemType == "Darwin" or SystemType == "Windows"):
+		print("Unsupported system type for file operations: ", SystemType)
 		return ""
 def main() -> None:
 
@@ -116,6 +152,8 @@ def main() -> None:
 	parser.add_argument("input", nargs="?", default=None, help="Czkawka JSON file path to process.")
 	parser.add_argument("-td", "-target-dir", default=None, help="Optional, target directory path that will be processed. Separate multiple directories with comma.")
 	parser.add_argument("-m", "-mode", default="t", help="Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite. Default is trash.")
+	parser.add_argument("-nb", "-no-backup", action="store_true", help="Optional, do not create backup before overwrite files.")
+	parser.add_argument("-c", "-command", action="store_true", help="Optional, give commands for file operations instead of using python.")
 	args = parser.parse_args()
 
 	CZJsonFilePath:Path|None=Path(args.input) if args.input else None
