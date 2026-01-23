@@ -1,20 +1,57 @@
-import asyncio, orjson, jsonpickle, yaml, sys, os, time, re, argparse, random
-import pprint
+import asyncio, jsonpickle, yaml, sys, os, time, re, argparse, random
+try:
+	import orjson
+	import orjson as json
+except ImportError:
+	import json as orjson
+from pprint import pprint
 from pathlib import Path, PurePath
 import argparse
 import configparser
 from utils_s import accelerator, get_encoding, writeToFile
 
 def setBiggestFileAsSource(czkawkaFileItems:list)->None:
-	largestFileSize=0
-	largestFileItem=None
-	for fileItem in czkawkaFileItems:
-		filePath=Path(fileItem["path"])
-		if filePath.is_file(): #todo sort the list by size descending and then sort by longest filenames and shortest parent directories depth in files with same size
-			fileSize=filePath.stat().st_size
-			if fileSize>largestFileSize:
-				largestFileSize=fileSize
-				largestFileItem=fileItem
+	if not czkawkaFileItems or len(czkawkaFileItems) == 0:
+		return (None, [])
+	if len(czkawkaFileItems) < 2:
+		return (None, [])
+	czkawkaFileItems.sort(key=lambda x: x['size'], reverse=True)
+	# asfasfas=[]
+	# for fff in czkawkaFileItems:
+	#     asfasfas.append(fff['path'])
+	asfasfas=[fff['size'] for fff in czkawkaFileItems]
+	pprint(asfasfas)
+	czkawkaFileItemsInASizeSorted=[]
+	czkawkaFileItemsSorted=[]
+	czkawkaFileItemsSorting=[]
+	while len(asfasfas)>0:
+		czkawkaFileItemsInASize=[fi for fi in czkawkaFileItems if fi["size"]==asfasfas[0]]
+		print("czkawkaFileItemsInASize:", czkawkaFileItemsInASize)
+		czkawkaFileItemsInASizeSorted=[]
+		if len(czkawkaFileItemsInASize)>1:
+			czkawkaFileItemsInASize.sort(key=lambda x: len(Path(x['path']).parts), reverse=False)
+			czkawkaFileItemsInASizePathLength=[len(Path(fi['path']).parts) for fi in czkawkaFileItemsInASize]
+			print("czkawkaFileItemsInASizePathLength:", czkawkaFileItemsInASizePathLength)
+			while len(czkawkaFileItemsInASizePathLength)>0:
+				czkawkaFileItemsInSameDepth=[fi for fi in czkawkaFileItemsInASize if len(Path(fi['path']).parts)==czkawkaFileItemsInASizePathLength[0]]
+				if len(czkawkaFileItemsInSameDepth)>1:
+					czkawkaFileItemsInSameDepth.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
+					print("czkawkaFileItemsInSameDepth:", czkawkaFileItemsInSameDepth)
+				czkawkaFileItemsInASizePathLength=[pd for pd in czkawkaFileItemsInASizePathLength if pd!=czkawkaFileItemsInASizePathLength[0]]
+				czkawkaFileItemsInASizeSorted.extend(czkawkaFileItemsInSameDepth)
+			# print("czkawkaFileItemsInASizeSorted:", czkawkaFileItemsInASizeSorted)
+
+				# if len(czkawkaFileItemsInASize)>1:
+
+			# sys.exit()
+			# czkawkaFileItemsInASize.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
+		else:
+			czkawkaFileItemsInASizeSorted.extend(czkawkaFileItemsInASize)
+		asfasfas=[sz for sz in asfasfas if sz!=asfasfas[0]]
+		czkawkaFileItemsSorting.extend(czkawkaFileItemsInASizeSorted)
+	czkawkaFileItemsSorted=czkawkaFileItemsSorting
+	czkawkaFileItemsSorting=[]
+	largestFileItem=czkawkaFileItemsSorted[0] if czkawkaFileItemsSorted else None
 	if largestFileItem:
 		print("Largest file to keep: ", largestFileItem)
 		czkawkaFileItemstarget=[fi for fi in czkawkaFileItems if fi["path"]!=largestFileItem["path"]]
@@ -79,8 +116,8 @@ def main() -> None:
 					fileItemsToHandle.append(fileItem)
 					if len(fileItemsToHandle)>=len(duplicateSet):
 						print("All files in this duplicate set are to handle, skipping further checks for this set.")
-						print(fileItemsToHandle)
-						sys.exit()
+						# print(fileItemsToHandle)
+						# sys.exit()
 						# fileItemsToHandle=[]
 						largestFileItem,fileItemsToHandle=setBiggestFileAsSource(fileItemsToHandle)
 						break
@@ -90,7 +127,7 @@ def main() -> None:
 			fileItemsToHandleStructure[duplicateSetKey]={}
 			fileItemsToHandleStructure[duplicateSetKey]["source"]=largestFileItem
 			fileItemsToHandleStructure[duplicateSetKey]["target"]=fileItemsToHandle
-			pprint.pprint(fileItemsToHandleStructure)
+			pprint(fileItemsToHandleStructure)
 			print(fileItemsToHandleStructure)
 			sys.exit()
 			if fileOperationMode=="overwrite":
