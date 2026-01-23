@@ -1,67 +1,124 @@
-import asyncio, jsonpickle, yaml, sys, os, time, re, argparse, random
+import sys, time, re
 try:
 	import orjson
-	import orjson as json
 except ImportError:
 	import json as orjson
 from pprint import pprint
 from pathlib import Path, PurePath
 import argparse
 import configparser
-from utils_s import accelerator, get_encoding, writeToFile
+from utils_s import get_encoding, writeToFile
+import pandas as pd
 
-def setBiggestFileAsSource(czkawkaFileItems:list)->None:
+# todo process duplicate items of a same file path in czkawka json result file
+# Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
+def setFitSourceAndTargetFiles(czkawkaFileItems: list) -> None:
+	czkawkaFileItemsPaths = [fi['path'] for fi in czkawkaFileItems]
+	czkawkaFileItemsDupPath = set(
+	    [
+	        y
+	        for y in czkawkaFileItemsPaths if czkawkaFileItemsPaths.count(y) > 1
+	    ]
+	)
+	if czkawkaFileItemsDupPath:
+		print(
+		    "Duplicate file paths found in czkawka file items:",
+		    czkawkaFileItemsDupPath
+		)
+		df = pd.DataFrame(czkawkaFileItems)
+		df.drop_duplicates(subset=['path'], keep='last', inplace=True)
+		czkawkaFileItems = df.to_dict("records")
+		print("Removed duplicate file paths.")
+		# sys.exit()
+		# return (None, [])
 	if not czkawkaFileItems or len(czkawkaFileItems) == 0:
 		return (None, [])
 	if len(czkawkaFileItems) < 2:
 		return (None, [])
 	czkawkaFileItems.sort(key=lambda x: x['size'], reverse=True)
 	# asfasfas=[]
-	# for fff in czkawkaFileItems:
-	#     asfasfas.append(fff['path'])
-	asfasfas=[fff['size'] for fff in czkawkaFileItems]
-	pprint(asfasfas)
-	czkawkaFileItemsInASizeSorted=[]
-	czkawkaFileItemsSorted=[]
-	czkawkaFileItemsSorting=[]
-	while len(asfasfas)>0:
-		czkawkaFileItemsInASize=[fi for fi in czkawkaFileItems if fi["size"]==asfasfas[0]]
-		print("czkawkaFileItemsInASize:", czkawkaFileItemsInASize)
-		czkawkaFileItemsInASizeSorted=[]
-		if len(czkawkaFileItemsInASize)>1:
-			czkawkaFileItemsInASize.sort(key=lambda x: len(Path(x['path']).parts), reverse=False)
-			czkawkaFileItemsInASizePathLength=[len(Path(fi['path']).parts) for fi in czkawkaFileItemsInASize]
-			print("czkawkaFileItemsInASizePathLength:", czkawkaFileItemsInASizePathLength)
-			while len(czkawkaFileItemsInASizePathLength)>0:
-				czkawkaFileItemsInSameDepth=[fi for fi in czkawkaFileItemsInASize if len(Path(fi['path']).parts)==czkawkaFileItemsInASizePathLength[0]]
-				if len(czkawkaFileItemsInSameDepth)>1:
-					czkawkaFileItemsInSameDepth.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
-					print("czkawkaFileItemsInSameDepth:", czkawkaFileItemsInSameDepth)
-				czkawkaFileItemsInASizePathLength=[pd for pd in czkawkaFileItemsInASizePathLength if pd!=czkawkaFileItemsInASizePathLength[0]]
-				czkawkaFileItemsInASizeSorted.extend(czkawkaFileItemsInSameDepth)
+	# for fi in czkawkaFileItems:
+	#     asfasfas.append(fi['path'])
+
+	CZFilesSizes = [fi['size'] for fi in czkawkaFileItems]
+	pprint(CZFilesSizes)
+	CZFilesEqualSizeSorted = []
+	CZFilesSorted = []
+	CZFilesSorting = []
+	CZFilesSources = []
+	CZFilesTargets = []
+	CZFilesTargetsTemp = []
+	while len(CZFilesSizes) > 0:
+		CZFilesEqualSize = [
+		    fi for fi in czkawkaFileItems if fi["size"] == CZFilesSizes[0]
+		]
+		print("czkawkaFileItemsInASize:", CZFilesEqualSize)
+		CZFilesEqualSizeSorted = []
+		if len(CZFilesEqualSize) > 1:
+			CZFilesEqualSize.sort(
+			    key=lambda x: len(Path(x['path']).parts), reverse=False
+			)
+			CZFilesEqualSizePathDepths = [
+			    len(Path(fi['path']).parts) for fi in CZFilesEqualSize
+			]
+			print(
+			    "czkawkaFileItemsInASizePathLength:", CZFilesEqualSizePathDepths
+			)
+			while len(CZFilesEqualSizePathDepths) > 0:
+				CZFilesInSameDepth = [
+				    fi for fi in CZFilesEqualSize if
+				    len(Path(fi['path']).parts) == CZFilesEqualSizePathDepths[0]
+				]
+				if len(CZFilesInSameDepth) > 1:
+					CZFilesInSameDepth.sort(
+					    key=lambda x: len(PurePath(x['path']).name),
+					    reverse=True
+					)
+					print("czkawkaFileItemsInSameDepth:", CZFilesInSameDepth)
+				CZFilesEqualSizePathDepths = [
+				    pd for pd in CZFilesEqualSizePathDepths
+				    if pd != CZFilesEqualSizePathDepths[0]
+				]
+				CZFilesEqualSizeSorted.extend(CZFilesInSameDepth)
 			# print("czkawkaFileItemsInASizeSorted:", czkawkaFileItemsInASizeSorted)
 
-				# if len(czkawkaFileItemsInASize)>1:
+			# if len(czkawkaFileItemsInASize)>1:
 
 			# sys.exit()
 			# czkawkaFileItemsInASize.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
 		else:
-			czkawkaFileItemsInASizeSorted.extend(czkawkaFileItemsInASize)
-		asfasfas=[sz for sz in asfasfas if sz!=asfasfas[0]]
-		czkawkaFileItemsSorting.extend(czkawkaFileItemsInASizeSorted)
-	czkawkaFileItemsSorted=czkawkaFileItemsSorting
-	czkawkaFileItemsSorting=[]
-	largestFileItem=czkawkaFileItemsSorted[0] if czkawkaFileItemsSorted else None
-	if largestFileItem:
-		print("Largest file to keep: ", largestFileItem)
-		czkawkaFileItemstarget=[fi for fi in czkawkaFileItems if fi["path"]!=largestFileItem["path"]]
-		return([largestFileItem],czkawkaFileItemstarget)
+			CZFilesEqualSizeSorted.extend(CZFilesEqualSize)
+		CZFilesSizes = [sz for sz in CZFilesSizes if sz != CZFilesSizes[0]]
+		CZFilesSorting.extend(CZFilesEqualSizeSorted)
+	CZFilesSorted = CZFilesSorting
+	CZFilesSorting = []
+	CZFilesSources.append(CZFilesSorted[0]) if CZFilesSorted else None
+	if CZFilesSources:
+		if len(CZFilesSources) > 1:
+			print("Files to be source: ", CZFilesSources)
+			CZFilesTargetsTemp=czkawkaFileItems
+			for fs in CZFilesSources:
+				CZFilesTargets = [
+				    fi for fi in CZFilesTargetsTemp if fi["path"] != fs["path"]
+				]
+		else:
+			print("File to be source: ", CZFilesSources)
+			CZFilesTargets = [
+			    fi for fi in czkawkaFileItems
+			    if fi["path"] != CZFilesSources[0]["path"]
+			]
+		if len(CZFilesSources)+len(CZFilesTargets) > len(czkawkaFileItems):
+			print(
+			    "Mismatch in file counts after setting source and targets."
+			)
+			return ([], [])
+		return (CZFilesSources, CZFilesTargets)
 	else:
 		print("No valid files found to remove.")
 
 def main() -> None:
 	jsonFile = Path(
-		rf"I:\codebase\python\pythontest\python-czkawka-json-test\results_duplicates_pretty.json"
+	    rf"I:\codebase\python\pythontest\python-czkawka-json-test\results_duplicates_pretty.json"
 	)
 	with open(jsonFile, "r", encoding=get_encoding(jsonFile)) as f:
 		try:
@@ -71,68 +128,91 @@ def main() -> None:
 			print(f"Failed to load json file. Error: {e}")
 			sys.exit()
 			return None
-	dirsToOverwrite=[r"I:\codebase\python\pythontest\python-czkawka-json-test\asffa",r"I:\codebase\python\pythontest\python-czkawka-json-test\\"]
-	fileOperationMode="overwrite"  # overwrite or delete
-	fileItemsToBeOverwritten=[]
-	fileItemsToBeDeleted=[]
-	FirstKeyCzkawkaJsonFromFile=next(iter(czkawkaJsonFromFile))
-	# print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
-	if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0]==dict:
-		n2LevelInSets=False
+	dirsToOverwrite = [
+	    r"I:\codebase\python\pythontest\python-czkawka-json-test\asffa",
+	    r"I:\codebase\python\pythontest\python-czkawka-json-test\\"
+	]
+	fileOperationMode = "overwrite"                                                                   # overwrite or delete
+	fileItemsToBeOverwritten = []
+	fileItemsToBeDeleted = []
+	FirstKeyCzkawkaJsonFromFile = next(iter(czkawkaJsonFromFile))
+	                                                                                                   # print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
+	if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0] == dict:
+		n2LevelInSets = False
 	elif czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0][0].get("path"):
-		n2LevelInSets=True
+		n2LevelInSets = True
 	else:
 		print("Unknown structure in czkawka json file.")
 		sys.exit()
 	for duplicateSetKey in czkawkaJsonFromFile:
 		print(duplicateSetKey)
 		if n2LevelInSets:
-			duplicateSet=czkawkaJsonFromFile.get(str(duplicateSetKey))[0]
+			duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))[0]
 		else:
-			duplicateSet=czkawkaJsonFromFile.get(str(duplicateSetKey))
-		fileItemsCountLikelyExist=len(duplicateSet)
-		fileItemsToHandle:list=[]
-		fileItemsToHandleStructure:dict={}
-		largestFileItem=None
+			duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))
+		fileItemsCountLikelyExist = len(duplicateSet)
+		fileItemsToHandle: list = []
+		fileItemsToHandleStructure: dict = {}
+		largestFileItem = None
 		for fileItem in duplicateSet:
-			if fileItemsCountLikelyExist<=1:
-				print("Only one file likely exists in this duplicate set, skipping further checks for this set.")
-				break					
-			# fileItem=orjson.loads(orjson.dumps(fileItem))
-			# print("File item:", fileItem, "type:", type(fileItem))
+			if fileItemsCountLikelyExist <= 1:
+				print(
+				    "Only one file likely exists in this duplicate set, skipping further checks for this set."
+				)
+				break
+			                                                                                                   # fileItem=orjson.loads(orjson.dumps(fileItem))
+                                                                                                   # print("File item:", fileItem, "type:", type(fileItem))
 			filePathInSet = Path(fileItem["path"])
-			# print("File path in set:", filePathInSet)
-			# sys.exit()
+			                                                                                                   # print("File path in set:", filePathInSet)
+                                                                                                   # sys.exit()
 			if filePathInSet.is_file():
 				print("File path in set exists:", filePathInSet)
 			else:
 				print("File path in set does not exist:", filePathInSet)
-				fileItemsCountLikelyExist-=1
+				fileItemsCountLikelyExist -= 1
 			for dirToOverwrite in dirsToOverwrite:
-				pattern=re.sub(r"\\\\\\\\",r"\\\\",rf"^{re.escape(dirToOverwrite)}.*")
-				# print(pattern)
+				pattern = re.sub(
+				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dirToOverwrite)}.*"
+				)
+				                                                                                                   # print(pattern)
 				if re.match(pattern, fileItem["path"]):
 					print("File path in set to be handle:", fileItem["path"])
 					fileItemsToHandle.append(fileItem)
-					if len(fileItemsToHandle)>=len(duplicateSet):
-						print("All files in this duplicate set are to handle, skipping further checks for this set.")
-						# print(fileItemsToHandle)
-						# sys.exit()
-						# fileItemsToHandle=[]
-						largestFileItem,fileItemsToHandle=setBiggestFileAsSource(fileItemsToHandle)
+					if len(fileItemsToHandle) >= len(duplicateSet):
+						print(
+						    "All files in this duplicate set are to handle, picking the largest file as source."
+						)
+						                                                                                                   # print(fileItemsToHandle)
+                                                                                                   # sys.exit()
+                                                                                                   # fileItemsToHandle=[]
+						try:
+							largestFileItem, fileItemsToHandle = setFitSourceAndTargetFiles(
+							    fileItemsToHandle
+							)
+						except Exception as e:
+							print(
+							    f"Failed to set biggest file as source. Error: {e}"
+							)
+							sys.exit()
 						break
 					break
 		if fileItemsToHandle:
-			print("Files to handle in this duplicate set:", fileItemsToHandle)
-			fileItemsToHandleStructure[duplicateSetKey]={}
-			fileItemsToHandleStructure[duplicateSetKey]["source"]=largestFileItem
-			fileItemsToHandleStructure[duplicateSetKey]["target"]=fileItemsToHandle
-			pprint(fileItemsToHandleStructure)
-			print(fileItemsToHandleStructure)
+			fileItemsToHandlePaths = [fi['path'] for fi in fileItemsToHandle]
+			print(
+			    "Files to handle in this duplicate set:", fileItemsToHandlePaths
+			)
+			                                                                                                   # print("Files to handle in this duplicate set:", fileItemsToHandle)
+			fileItemsToHandleStructure[duplicateSetKey] = {}
+			fileItemsToHandleStructure[duplicateSetKey]["source"
+			                                           ] = largestFileItem
+			fileItemsToHandleStructure[duplicateSetKey]["target"
+			                                           ] = fileItemsToHandle
+			                                                                                                   # pprint(fileItemsToHandleStructure)
+                                                                                                   # print(fileItemsToHandleStructure)
 			sys.exit()
-			if fileOperationMode=="overwrite":
+			if fileOperationMode == "overwrite":
 				fileItemsToBeOverwritten.extend(fileItemsToHandle)
-			elif fileOperationMode=="delete":
+			elif fileOperationMode == "delete":
 				fileItemsToBeDeleted.extend(fileItemsToHandle)
 			else:
 				print("Unknown file operation mode: ", fileOperationMode)
@@ -148,7 +228,6 @@ def main() -> None:
 	print(n1stElement1stFileInfo["path"])
 	czkawkaJsonFromFile["369"] = [[]]
 	writeToFile(rf"I:\pythontest\python-czkawka-json-test\New Folder", "ssss")
-
 
 if __name__ == "__main__":
 	main()
