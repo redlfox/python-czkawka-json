@@ -1,3 +1,4 @@
+from mimetypes import init
 import sys, time, re
 try:
 	import orjson
@@ -12,6 +13,12 @@ import pandas as pd
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
 def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
+	CZFilesEqualSizeSorted = []
+	CZFilesSorting = []
+	CZFilesSorted = []
+	CZFilesSources = []
+	CZFilesTargets = []
+	CZFilesTargetsTemp = []
 	CZFileItemsPaths = [fi['path'] for fi in CZFileItems]
 	CZFileItemsDupPaths = set(
 	    [fp for fp in CZFileItemsPaths if CZFileItemsPaths.count(fp) > 1]
@@ -33,18 +40,13 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 		return ([], [])
 	CZFileItems.sort(key=lambda x: x['size'], reverse=True)
 	CZFilesSizes = [fi['size'] for fi in CZFileItems]
-	pprint(CZFilesSizes)
-	CZFilesEqualSizeSorted = []
-	CZFilesSorted = []
-	CZFilesSorting = []
-	CZFilesSources = []
-	CZFilesTargets = []
-	CZFilesTargetsTemp = []
+	# pprint(CZFilesSizes)
+	
 	while len(CZFilesSizes) > 0:
 		CZFilesEqualSize = [
 		    fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]
 		]
-		print("czkawkaFileItemsInASize:", CZFilesEqualSize)
+		# print("czkawkaFileItemsInASize:", CZFilesEqualSize)
 		CZFilesEqualSizeSorted = []
 		if len(CZFilesEqualSize) > 1:
 			CZFilesEqualSize.sort(
@@ -53,9 +55,9 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 			CZFilesEqualSizePathDepths = [
 			    len(Path(fi['path']).parts) for fi in CZFilesEqualSize
 			]
-			print(
-			    "czkawkaFileItemsInASizePathLength:", CZFilesEqualSizePathDepths
-			)
+			# print(
+			#     "czkawkaFileItemsInASizePathLength:", CZFilesEqualSizePathDepths
+			# )
 			while len(CZFilesEqualSizePathDepths) > 0:
 				CZFilesInSameDepth = [
 				    fi for fi in CZFilesEqualSize if
@@ -66,7 +68,7 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 					    key=lambda x: len(PurePath(x['path']).name),
 					    reverse=True
 					)
-					print("czkawkaFileItemsInSameDepth:", CZFilesInSameDepth)
+					# print("czkawkaFileItemsInSameDepth:", CZFilesInSameDepth)
 				CZFilesEqualSizePathDepths = [
 				    pd for pd in CZFilesEqualSizePathDepths
 				    if pd != CZFilesEqualSizePathDepths[0]
@@ -99,45 +101,83 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 		return (CZFilesSources, CZFilesTargets)
 	else:
 		print("No valid files found to remove.")
-
+def generateSystemCLICommands(operation:str, source:Path, target:Path,forceExecute:bool) -> str:
+	if operation == "delete":
+		return f'del "{target}"'
+	elif operation == "overwrite":
+		return f'copy /Y "{source}" "{target}"'
+	else:
+		return ""
 def main() -> None:
-	jsonFile = Path(
-	    rf"I:\codebase\python\pythontest\python-czkawka-json-test\results_duplicates_pretty.json"
-	)
-	with open(jsonFile, "r", encoding=get_encoding(jsonFile)) as f:
+
+	init()
+
+	parser = argparse.ArgumentParser(description="Tool to process Czkawka JSON files.")
+	parser.add_argument("input", nargs="?", default=None, help="Czkawka JSON file path to process.")
+	parser.add_argument("-td", "-target-dir", default=None, help="Optional, target directory path that will be processed. Separate multiple directories with comma.")
+	parser.add_argument("-m", "-mode", default="t", help="Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite. Default is trash.")
+	args = parser.parse_args()
+
+	CZJsonFilePath:Path|None=Path(args.input) if args.input else None
+	if CZJsonFilePath and CZJsonFilePath.is_file():
+		print("Czkawka JSON file path from argument: ", CZJsonFilePath)
+	else:
+		print("No valid Czkawka JSON file path provided.")
+		sys.exit()
+	dirsToSetAsTarget: str |None = args.td if args.td else None
+	if dirsToSetAsTarget:
+		try:
+			dirsToSetAsTarget = dirsToSetAsTarget.split(",")
+			print("Target directories from argument: ")
+			pprint(dirsToSetAsTarget)
+		except Exception as e:
+			print(f"Failed to parse target directories. Error: {e}")
+			sys.exit()
+			return None
+	# File operation mode, use trash mode if not provided or invalid
+	CZFileOperationMode:str|None=str(args.m) if args.input else None
+	if CZFileOperationMode and CZFileOperationMode in ["d", "t", "o"]:
+		print("File operation mode from argument: ", CZFileOperationMode)
+	else:
+		print("No valid file operation mode provided, defaulting to trash.")
+		CZFileOperationMode = "t"
+	# print("File operation mode argument: ", CZFileOperationMode)
+	with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
 		try:
 			czkawkaJsonFromFile = orjson.loads(f.read())
 		except Exception as e:
 			# handle_caught_exception(e, known=True)
 			print(f"Failed to load json file. Error: {e}")
 			sys.exit()
-			return None
-	dirsToOverwrite = [
-	    r"I:\codebase\python\pythontest\python-czkawka-json-test\asffa",
-	    r"I:\codebase\python\pythontest\python-czkawka-json-test\\"
-	]
-	fileOperationMode = "overwrite"                                                                   # overwrite or delete
-	fileItemsToBeOverwritten = []
-	fileItemsToBeDeleted = []
+			return None            
+	CZFilesToBeOverwritten = []
+	CZFilesToBeDeleted = []
+	CZFilesToOperateMapping = []
 	FirstKeyCzkawkaJsonFromFile = next(iter(czkawkaJsonFromFile))
 	                                                                                                   # print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
-	if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0] == dict:
+	# print(type(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0]))
+	if isinstance(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], dict):
 		n2LevelInSets = False
-	elif czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0][0].get("path"):
-		n2LevelInSets = True
+	elif isinstance(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], list):
+		if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0][0].get("path"):
+			n2LevelInSets = True
+		else:
+			print("Unknown structure in czkawka json file.")
+			sys.exit()
 	else:
 		print("Unknown structure in czkawka json file.")
 		sys.exit()
+	# Proccessing every duplicate set in czkawka json data
 	for duplicateSetKey in czkawkaJsonFromFile:
-		print(duplicateSetKey)
+		# print(duplicateSetKey)
 		if n2LevelInSets:
 			duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))[0]
 		else:
 			duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))
 		fileItemsCountLikelyExist = len(duplicateSet)
-		fileItemsToHandle: list = []
-		fileItemsToHandleStructure: dict = {}
-		largestFileItem = None
+		CZFilesToOperatePerSet: list = []
+		CZFilesToOperatePerSetMapping: dict = {}
+		CZFilesSources = None
 		for fileItem in duplicateSet:
 			if fileItemsCountLikelyExist <= 1:
 				print(
@@ -148,27 +188,27 @@ def main() -> None:
 
 # print("File item:", fileItem, "type:", type(fileItem))
 			filePathInSet = Path(fileItem["path"])
-			# print("File path in set:", filePathInSet)
+			# print("File path in the set:", filePathInSet)
 			# sys.exit()
 			if filePathInSet.is_file():
-				print("File path in set exists:", filePathInSet)
+				print("File path in the set exists:", filePathInSet)
 			else:
-				print("File path in set does not exist:", filePathInSet)
+				print("File path in the set does not exist:", filePathInSet)
 				fileItemsCountLikelyExist -= 1
-			for dirToOverwrite in dirsToOverwrite:
+			for dirToSetAsTarget in dirsToSetAsTarget:
 				pattern = re.sub(
-				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dirToOverwrite)}.*"
-				)
+				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dirToSetAsTarget)}.*"
+				) # Fix broken backslashes in pattern
 				if re.match(pattern, fileItem["path"]):
-					print("File path in set to be handle:", fileItem["path"])
-					fileItemsToHandle.append(fileItem)
-					if len(fileItemsToHandle) >= len(duplicateSet):
+					print("File path in the set to be handle:", fileItem["path"])
+					CZFilesToOperatePerSet.append(fileItem)
+					if len(CZFilesToOperatePerSet) >= len(duplicateSet):
 						print(
 						    "All files in this duplicate set are to handle, picking the largest file as source."
 						)
 						try:
-							largestFileItem, fileItemsToHandle = setFitSourceAndTargetFiles(
-							    fileItemsToHandle
+							CZFilesSources, CZFilesToOperatePerSet = setFitSourceAndTargetFiles(
+							    CZFilesToOperatePerSet
 							)
 						except Exception as e:
 							print(
@@ -177,38 +217,39 @@ def main() -> None:
 							sys.exit()
 						break
 					break
-		if fileItemsToHandle:
-			fileItemsToHandlePaths = [fi['path'] for fi in fileItemsToHandle]
+		if CZFilesToOperatePerSet:
+			fileItemsToHandlePaths = [fi['path'] for fi in CZFilesToOperatePerSet]
 			print(
 			    "Files to handle in this duplicate set:", fileItemsToHandlePaths
 			)
 			# print("Files to handle in this duplicate set:", fileItemsToHandle)
-			fileItemsToHandleStructure[duplicateSetKey] = {}
-			fileItemsToHandleStructure[duplicateSetKey]["source"
-			                                           ] = largestFileItem
-			fileItemsToHandleStructure[duplicateSetKey]["target"
-			                                           ] = fileItemsToHandle
+			CZFilesToOperatePerSetMapping[duplicateSetKey] = {}
+			CZFilesToOperatePerSetMapping[duplicateSetKey]["source"
+			                                           ] = CZFilesSources
+			CZFilesToOperatePerSetMapping[duplicateSetKey]["target"
+			                                           ] = CZFilesToOperatePerSet
 			# pprint(fileItemsToHandleStructure)
-			# print(fileItemsToHandleStructure)
-			sys.exit()
-			if fileOperationMode == "overwrite":
-				fileItemsToBeOverwritten.extend(fileItemsToHandle)
-			elif fileOperationMode == "delete":
-				fileItemsToBeDeleted.extend(fileItemsToHandle)
-			else:
-				print("Unknown file operation mode: ", fileOperationMode)
-	sys.exit()
-	print(list(czkawkaJsonFromFile)[0])
-	print(type(czkawkaJsonFromFile))
-	n1stElement = czkawkaJsonFromFile["4"]
-	print(n1stElement)
-	print(type(n1stElement))
-	n1stElement1stFileInfo = n1stElement[0][0]
-	print(n1stElement1stFileInfo)
-	print(type(n1stElement1stFileInfo))
-	print(n1stElement1stFileInfo["path"])
-	czkawkaJsonFromFile["369"] = [[]]
-	writeToFile(rf"I:\pythontest\python-czkawka-json-test\New Folder", "ssss")
+			# print(CZFilesToOperatePerSetMapping)
+			# sys.exit()
+			CZFilesToOperateMapping.append(CZFilesToOperatePerSetMapping)
+	# pprint(CZFilesToOperateMapping)
+	# pprint(CZFilesToOperateMapping)
+	fileOperateSet:dict={}
+	systemCLICommands:str=""
+	for fileOperateSetKey in CZFilesToOperateMapping:
+		fileOperateSet = CZFilesToOperateMapping.get(str(fileOperateSetKey))
+		for targetFile in fileOperateSet["target"]:
+			targetFilePath = Path(targetFile["path"])
+		if CZFileOperationMode == "t":
+			pass
+		elif CZFileOperationMode == "d":
+			CZFilesToBeDeleted.extend(CZFilesToOperatePerSet)
+		elif CZFileOperationMode == "o":
+			CZFilesToBeOverwritten.extend(CZFilesToOperatePerSet)
+		else:
+			print("Unknown file operation mode: ", CZFileOperationMode)
+	# sys.exit()
+	# writeToFile(rf"I:\pythontest\python-czkawka-json-test\New Folder", "ssss")
 
 if __name__ == "__main__":
 	main()
