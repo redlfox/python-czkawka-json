@@ -77,15 +77,21 @@ def debugprint(printvar):  # wip
 	return
 
 
-def writeToFile(file_path: Path, writeContext, openmode: str = 'a'):  # wip
+def writeToFile(
+	file_path, writeContext, openmode: str = 'a', file_encoding: str = 'utf-8'
+):  # wip
+	file_path=Path(file_path)
+	if file_encoding == 'auto':
+		file_encoding = get_encoding(file_path)
 	file_path_dir = Path(PurePath(file_path).parent)
+	print(os.path.dirname(file_path))
 	if not Path(file_path).exists():
 		if not Path(file_path_dir).exists():
 			file_path_dir.mkdir()
 		file_path.touch()
-	elif not file_path.is_file:
-		raise
-	with file_path.open(mode=openmode, encoding='utf-8') as file:
+	elif not file_path.is_file():
+		raise Exception('Targret is not a file.')
+	with file_path.open(mode=openmode, encoding=file_encoding) as file:
 		if openmode == 'a':
 			file.write('\n' + str(writeContext))
 		elif openmode == 'w':
