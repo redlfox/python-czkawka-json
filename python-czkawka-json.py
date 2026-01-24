@@ -9,9 +9,10 @@ from pprint import pprint
 from pathlib import Path, PurePath
 import argparse
 import configparser
-from utils_s import get_encoding, writeToFile
+from utils_s import get_encoding, writeToFile,readFromFile
 import pandas as pd
 import platform
+import cv2
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
 def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
@@ -43,7 +44,7 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 	CZFileItems.sort(key=lambda x: x['size'], reverse=True)
 	CZFilesSizes = [fi['size'] for fi in CZFileItems]
 	# pprint(CZFilesSizes)
-	
+
 	while len(CZFilesSizes) > 0:
 		CZFilesEqualSize = [
 		    fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]
@@ -103,16 +104,23 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 		return (CZFilesSources, CZFilesTargets)
 	else:
 		print("No valid files found to remove.")
-def generateSystemCLICommands(operation:str, source:Path, target:Path,forceConfirm:bool=False,gioTrash:bool=False) -> str:
-	SystemType=platform.system()
-	forceExecuteOption=""
+
+def generateSystemCLICommands(
+    operation: str,
+    source: Path,
+    target: Path,
+    forceConfirm: bool = False,
+    gioTrash: bool = False
+) -> str:
+	SystemType = platform.system()
+	forceExecuteOption = ""
 	if operation == "trash":
 		if SystemType == "Linux" or SystemType == "Darwin":
 			if not gioTrash:
 				return f'trash-put "{target}"'
 			elif gioTrash:
 				if forceConfirm:
-					forceExecuteOption="-f "
+					forceExecuteOption = "-f "
 				return f'gio trash {forceExecuteOption}"{target}"'
 		elif SystemType == "Windows":
 			print("Windows trash operation is not implemented yet.")
@@ -136,68 +144,202 @@ def generateSystemCLICommands(operation:str, source:Path, target:Path,forceConfi
 				return f'cp -f "{source}" "{target}"'
 		elif SystemType == "Windows":
 			if forceConfirm:
-				forceExecuteOption="/Y "
+				forceExecuteOption = "/Y "
 			return f'xcopy {forceExecuteOption}"{source}" "{target}"'
 	else:
 		print("Unknown file operation: ", operation)
 		return ""
-	if not (SystemType == "Linux" or SystemType == "Darwin" or SystemType == "Windows"):
+	if not (
+	    SystemType == "Linux" or SystemType == "Darwin" or
+	    SystemType == "Windows"
+	):
 		print("Unsupported system type for file operations: ", SystemType)
 		return ""
+
 def main() -> None:
 
 	init()
 
-	parser = argparse.ArgumentParser(description="Tool to process Czkawka JSON files.")
-	parser.add_argument("input", nargs="?", default=None, help="Czkawka JSON file path to process.")
-	parser.add_argument("-td", "-target-dir", default=None, help="Optional, target directory path that will be processed. Separate multiple directories with comma.")
-	parser.add_argument("-m", "-mode", default="t", help="Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite. Default is trash.")
-	parser.add_argument("-nb", "-no-backup", action="store_true", help="Optional, do not create backup before overwrite files.")
-	parser.add_argument("-c", "-command", action="store_true", help="Optional, give commands for file operations instead of using python.")
+	parser = argparse.ArgumentParser(
+	    description="Tool to process Czkawka JSON files."
+	)
+	parser.add_argument(
+	    "input",
+	    nargs="?",
+	    default=None,
+	    help="Czkawka JSON file path to process."
+	)
+	parser.add_argument(
+	    "-td",
+	    "-target-dir",
+	    default=None,
+	    help=
+	    "Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
+	)
+	parser.add_argument(
+	    "-tdf",
+	    "-target-dir-file",
+	    default=None,
+	    help=
+	    "Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
+	)
+	parser.add_argument(
+	    "-ed",
+	    "-excluded-dir",
+	    default=None,
+	    help=
+	    "Optional, excluded directory paths in json that will be ignored. Separate multiple directories with comma."
+	)
+	parser.add_argument(
+	    "-edf",
+	    "-excluded-dir-file",
+	    default=None,
+	    help=
+	    "Optional, excluded directory paths in json that will be ignored. Read directories from given file."
+	)
+	parser.add_argument(
+	    "-r",
+	    "-read",
+	    action="store_true",
+	    help=
+	    "Optional, test"
+	)
+	parser.add_argument(
+	    "-n",
+	    "-no-operation",
+	    action="store_true",
+	    help=
+	    "Optional, do not perform any file operations."
+	)
+	parser.add_argument(
+	    "-g",
+	    "-get-metadata",
+	    action="store_true",
+	    help=
+	    "Optional, get file metadata by file type."
+	)
+	parser.add_argument(
+	    "-m",
+	    "-mode",
+	    default=None,
+	    help=
+	    "Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
+	)
+	parser.add_argument(
+	    "-nb",
+	    "-no-backup",
+	    action="store_true",
+	    help="Optional, do not create backup before overwrite files."
+	)
+	parser.add_argument(
+	    "-s",
+	    "-skip-compare",
+	    action="store_true",
+	    help="Optional, do not compare files in duplicate sets to filter files for operation."
+	)
+	parser.add_argument(
+	    "-D",
+	    "-destination",
+	    default=None, 
+	    help="Optional, set destination for saving generated json files."
+	)
+	parser.add_argument(
+	    "-p",
+	    "-json-prefix",
+	    default=None, 
+	    help="Optional, set prefix of filenames for generated json files to save."
+	)
+	parser.add_argument(
+	    "-rs",
+	    "-real-sizes",
+	    action="store_true",
+	    help="Optional, use real file sizes."
+	)
+	parser.add_argument(
+	    "-db",
+	    "-debug",
+	    action="store_true",
+	    help="Optional, show debug information."
+	)
+	parser.add_argument(
+	    "-c",
+	    "-command",
+	    action="store_true",
+	    help=
+	    "Optional, give commands for file operations instead of using python."
+	)
 	args = parser.parse_args()
 
-	CZJsonFilePath:Path|None=Path(args.input) if args.input else None
+	CZJsonFilePath: Path | None = Path(args.input) if args.input else None
 	if CZJsonFilePath and CZJsonFilePath.is_file():
 		print("Czkawka JSON file path from argument: ", CZJsonFilePath)
 	else:
 		print("No valid Czkawka JSON file path provided.")
 		sys.exit()
-	dirsToSetAsTarget: str |None = args.td if args.td else None
-	if dirsToSetAsTarget:
+	dirsToSetAsTarget=[]
+	if args.td:
 		try:
-			dirsToSetAsTarget = dirsToSetAsTarget.split(",")
+			dirsToSetAsTarget = args.td.split(",")
 			print("Target directories from argument: ")
 			pprint(dirsToSetAsTarget)
 		except Exception as e:
 			print(f"Failed to parse target directories. Error: {e}")
 			sys.exit()
 			return None
+	if args.tdf:
+		if dirsToSetAsTarget:
+			dirsToSetAsTarget.extend((readFromFile(args.tdf)).splitlines())
+		else:
+			dirsToSetAsTarget=readFromFile(args.tdf).splitlines()
+	if args.ed:
+		try:
+			excludedDirs = args.ed.split(",")
+			print("Excluded directories from argument: ")
+			pprint(excludedDirs)
+		except Exception as e:
+			print(f"Failed to parse excluded directories. Error: {e}")
+			sys.exit()
+			return None
+	if args.edf:
+		if excludedDirs:
+			excludedDirs.extend((readFromFile(args.edf)).splitlines())
+		else:
+			excludedDirs=readFromFile(args.edf).splitlines()
 	# File operation mode, use trash mode if not provided or invalid
-	CZFileOperationMode:str|None=str(args.m) if args.input else None
+	CZFileOperationMode: str | None = str(args.m) if args.input else None
 	if CZFileOperationMode and CZFileOperationMode in ["d", "t", "o"]:
 		print("File operation mode from argument: ", CZFileOperationMode)
 	else:
-		print("No valid file operation mode provided, defaulting to trash.")
-		CZFileOperationMode = "t"
+		print(
+		    "No valid file operation mode provided, won't perform any file operations."
+		)
 	# print("File operation mode argument: ", CZFileOperationMode)
-	with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
-		try:
-			czkawkaJsonFromFile = orjson.loads(f.read())
-		except Exception as e:
-			# handle_caught_exception(e, known=True)
-			print(f"Failed to load json file. Error: {e}")
-			sys.exit()
-			return None            
+	skipCompare: bool = args.s
+
+	try:
+		czkawkaJsonFromFile = orjson.loads(readFromFile(CZJsonFilePath))
+	except Exception as e:
+		# handle_caught_exception(e, known=True)
+		print(f"Failed to load json file. Error: {e}")
+		sys.exit()
+		return None
+	sys.exit()
+	# with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
 	CZFilesToBeOverwritten = []
 	CZFilesToBeDeleted = []
 	CZFilesToOperateMapping = []
 	FirstKeyCzkawkaJsonFromFile = next(iter(czkawkaJsonFromFile))
-	                                                                                                   # print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
+	# print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
 	# print(type(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0]))
-	if isinstance(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], dict):
+	if isinstance(
+	    czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], dict
+	):
 		n2LevelInSets = False
-	elif isinstance(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], list):
-		if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0][0].get("path"):
+	elif isinstance(
+	    czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], list
+	):
+		if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile
+		                          )[0][0].get("path"):
 			n2LevelInSets = True
 		else:
 			print("Unknown structure in czkawka json file.")
@@ -222,7 +364,7 @@ def main() -> None:
 				    "Only one file likely exists in this duplicate set, skipping further checks for this set."
 				)
 				break
-			                                                                                                   # fileItem=orjson.loads(orjson.dumps(fileItem))
+			# fileItem=orjson.loads(orjson.dumps(fileItem))
 
 # print("File item:", fileItem, "type:", type(fileItem))
 			filePathInSet = Path(fileItem["path"])
@@ -236,9 +378,11 @@ def main() -> None:
 			for dirToSetAsTarget in dirsToSetAsTarget:
 				pattern = re.sub(
 				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dirToSetAsTarget)}.*"
-				) # Fix broken backslashes in pattern
+				)  # Fix broken backslashes in pattern
 				if re.match(pattern, fileItem["path"]):
-					print("File path in the set to be handle:", fileItem["path"])
+					print(
+					    "File path in the set to be handle:", fileItem["path"]
+					)
 					CZFilesToOperatePerSet.append(fileItem)
 					if len(CZFilesToOperatePerSet) >= len(duplicateSet):
 						print(
@@ -256,24 +400,26 @@ def main() -> None:
 						break
 					break
 		if CZFilesToOperatePerSet:
-			fileItemsToHandlePaths = [fi['path'] for fi in CZFilesToOperatePerSet]
+			fileItemsToHandlePaths = [
+			    fi['path'] for fi in CZFilesToOperatePerSet
+			]
 			print(
 			    "Files to handle in this duplicate set:", fileItemsToHandlePaths
 			)
 			# print("Files to handle in this duplicate set:", fileItemsToHandle)
 			CZFilesToOperatePerSetMapping[duplicateSetKey] = {}
 			CZFilesToOperatePerSetMapping[duplicateSetKey]["source"
-			                                           ] = CZFilesSources
-			CZFilesToOperatePerSetMapping[duplicateSetKey]["target"
-			                                           ] = CZFilesToOperatePerSet
+			                                              ] = CZFilesSources
+			CZFilesToOperatePerSetMapping[duplicateSetKey][
+			    "target"] = CZFilesToOperatePerSet
 			# pprint(fileItemsToHandleStructure)
 			# print(CZFilesToOperatePerSetMapping)
 			# sys.exit()
 			CZFilesToOperateMapping.append(CZFilesToOperatePerSetMapping)
 	# pprint(CZFilesToOperateMapping)
 	# pprint(CZFilesToOperateMapping)
-	fileOperateSet:dict={}
-	systemCLICommands:str=""
+	fileOperateSet: dict = {}
+	systemCLICommands: str = ""
 	for fileOperateSetKey in CZFilesToOperateMapping:
 		fileOperateSet = CZFilesToOperateMapping.get(str(fileOperateSetKey))
 		for targetFile in fileOperateSet["target"]:

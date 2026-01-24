@@ -96,3 +96,12 @@ def writeToFile(
 			file.write('\n' + str(writeContext))
 		elif openmode == 'w':
 			file.write(str(writeContext))
+
+def readFromFile(file_path)->str:
+	file_path=Path(file_path)
+	if not Path(file_path).exists():
+		raise Exception('File not exist.')
+	elif not file_path.is_file():
+		raise Exception('Targret is not a file.')
+	with file_path.open(mode='r', encoding=get_encoding(file_path)) as file:
+		return file.read()
