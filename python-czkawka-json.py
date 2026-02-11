@@ -110,16 +110,18 @@ def setFitSourceAndTargetFiles(CZFileItems: list,CAFileSource:dict={}) -> None:
 	else:
 		print("No valid files found to remove.")
 
-def generateOSCLICommands(
+def generateCLICommands(
     operation: str,
     target: Path,
     source: Path=None,
     forceConfirm: bool = False,
-    gioTrash: bool = False
+    gioTrash: bool = False,
+	toNewFile: bool = False
 ) -> str:
 	SystemType = platform.system()
 	commandArguments=""
 	forceExecuteOption = ""
+	newFileOption = ""
 	if SystemType == "Linux" or SystemType == "Darwin":
 		if re.match(r".*\'.*",target): # also for cygwin and msys2
 			targetStr=re.sub(r"([\s'!()&])",r"\\\1",target)
@@ -161,7 +163,9 @@ def generateOSCLICommands(
 		elif SystemType == "Windows":
 			if forceConfirm:
 				forceExecuteOption = "/Y "
-			return f'xcopy {forceExecuteOption}"{source}" {targetStr}'
+			if toNewFile:
+				newFileOption = "echo f | "
+			return f'{newFileOption}xcopy {forceExecuteOption}"{source}" {targetStr}'
 	else:
 		print("Unknown file operation: ", operation)
 		return ""
@@ -347,8 +351,13 @@ def main() -> None:
 	# File operation mode, use trash mode if not provided or invalid
 	CZFileOperationMode: str | None = str(args.m) if args.input else None
 	if CZFileOperationMode and CZFileOperationMode in ["d", "t", "o"]:
-
-		print("File operation mode from argument:", CZFileOperationMode)
+		if CZFileOperationMode=="d":
+			CZFileOperationModeFull="delete"
+		if CZFileOperationMode=="t":
+			CZFileOperationModeFull="trash"
+		if CZFileOperationMode=="o":
+			CZFileOperationModeFull="overwrite"
+		print("File operation mode from argument:", CZFileOperationModeFull)
 	else:
 		print(
 		    "No valid file operation mode provided, won't perform any file operations."
@@ -509,10 +518,14 @@ def main() -> None:
 			    "Files to handle in this duplicate set:", fileItemsToHandlePaths
 			)
 			# print("Files to handle in this duplicate set:", fileItemsToHandle)
-			CZFilesToOperatePerSetMapping[duplicateSetKey] = {}
-			CZFilesToOperatePerSetMapping[duplicateSetKey]["source"
+			# CZFilesToOperatePerSetMapping[duplicateSetKey] = {}
+			# CZFilesToOperatePerSetMapping[duplicateSetKey]["source"
+			#                                               ] = CZFilesSources
+			# CZFilesToOperatePerSetMapping[duplicateSetKey][
+			#     "target"] = CZFilesToOperatePerSet
+			CZFilesToOperatePerSetMapping["source"
 			                                              ] = CZFilesSources
-			CZFilesToOperatePerSetMapping[duplicateSetKey][
+			CZFilesToOperatePerSetMapping[
 			    "target"] = CZFilesToOperatePerSet
 			# pprint(fileItemsToHandleStructure)
 			# print(CZFilesToOperatePerSetMapping)
@@ -522,16 +535,28 @@ def main() -> None:
 	pprint(CZFilesToOperateMapping)
 	fileOperateSet: dict = {}
 	systemCLICommands: str = ""
+	targetCommands: list = []
+	backupCommands: list = []
+	targetFilePaths=[]
 	# sys.exit()
-	for fileOperateSetKey in CZFilesToOperateMapping:
-		fileOperateSet = CZFilesToOperateMapping.get(str(fileOperateSetKey))
-		targetFilePaths=[]
+	for fileOperateSet in CZFilesToOperateMapping:
 		for targetFile in fileOperateSet["target"]:
 			targetFilePath = Path(targetFile["path"])
 			targetFilePaths.append(targetFilePath)
 			if useCommands:
-				targetCommands=generateOSCLICommands(operation="overwrite",target=targetFilePath,source=fileOperateSet["source"]["path"])
+				targetCommands.append(generateCLICommands(operation=CZFileOperationModeFull,target=targetFilePath,source=fileOperateSet["source"]["path"]))
+				if CZFileOperationMode=="o":
+					targetFileBackupPath=PurePath(r"S:\btdl\test") / targetFilePath.name
+					backupCommands.append(generateCLICommands(operation="overwrite",target=targetFileBackupPath,source=targetFilePath,toNewFile=True))
+
+	if CZFileOperationMode=="o":
+		afsasaf="\n".join(str(fi) for fi in targetFilePaths)
+		print(afsasaf)
 	if useCommands:
+		print("generated backup commands:")
+		for c in backupCommands:
+			print(c)
+		print("generated commands:")
 		for c in targetCommands:
 			print(c)
 
