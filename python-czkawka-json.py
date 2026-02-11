@@ -15,7 +15,12 @@ import platform
 import cv2
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
-def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
+def getBiggestFile(CZFileItems: list) -> None:
+	CZFileItems.sort(key=lambda x: x['size'], reverse=True)
+	# print(CZFileItems)
+	return CZFileItems[0]
+
+def setFitSourceAndTargetFiles(CZFileItems: list,CAFileSource:dict={}) -> None:
 	CZFilesEqualSizeSorted = []
 	CZFilesSorting = []
 	CZFilesSorted = []
@@ -105,47 +110,58 @@ def setFitSourceAndTargetFiles(CZFileItems: list) -> None:
 	else:
 		print("No valid files found to remove.")
 
-def generateSystemCLICommands(
+def generateOSCLICommands(
     operation: str,
-    source: Path,
     target: Path,
+    source: Path=None,
     forceConfirm: bool = False,
     gioTrash: bool = False
 ) -> str:
 	SystemType = platform.system()
+	commandArguments=""
 	forceExecuteOption = ""
+	if SystemType == "Linux" or SystemType == "Darwin":
+		if re.match(r".*\'.*",target): # also for cygwin and msys2
+			targetStr=re.sub(r"([\s'!()&])",r"\\\1",target)
+		else:
+			targetStr='"{}"'.format(target)
+	elif SystemType == "Windows":
+		targetStr='"{}"'.format(target)
+	else:
+		targetStr='"{}"'.format(target)
 	if operation == "trash":
 		if SystemType == "Linux" or SystemType == "Darwin":
 			if not gioTrash:
-				return f'trash-put "{target}"'
+				return f'trash-put {targetStr}'
 			elif gioTrash:
 				if forceConfirm:
 					forceExecuteOption = "-f "
-				return f'gio trash {forceExecuteOption}"{target}"'
+				return f'gio trash {forceExecuteOption}{targetStr}'
 		elif SystemType == "Windows":
 			print("Windows trash operation is not implemented yet.")
-			return f'"{target}"'
+			return f'{targetStr}'
 	elif operation == "delete":
 		if SystemType == "Linux" or SystemType == "Darwin":
 			if not forceConfirm:
-				return f'rm -i "{target}"'
+				commandArguments="-i "
 			else:
-				return f'rm -f "{target}"'
+				commandArguments="-f "
+			return f'rm {commandArguments}{targetStr}'
 		elif SystemType == "Windows":
 			if not forceConfirm:
-				return f'del /P "{target}"'
+				return f'del /P {targetStr}'
 			else:
-				return f'del /F /Q "{target}"'
+				return f'del /F /Q {targetStr}'
 	elif operation == "overwrite":
 		if SystemType == "Linux" or SystemType == "Darwin":
 			if not forceConfirm:
-				return f'cp -i "{source}" "{target}"'
+				return f'cp -i "{source}" {targetStr}'
 			else:
-				return f'cp -f "{source}" "{target}"'
+				return f'cp -f "{source}" {targetStr}'
 		elif SystemType == "Windows":
 			if forceConfirm:
 				forceExecuteOption = "/Y "
-			return f'xcopy {forceExecuteOption}"{source}" "{target}"'
+			return f'xcopy {forceExecuteOption}"{source}" {targetStr}'
 	else:
 		print("Unknown file operation: ", operation)
 		return ""
@@ -168,6 +184,13 @@ def main() -> None:
 	    nargs="?",
 	    default=None,
 	    help="Czkawka JSON file path to process."
+	)
+	parser.add_argument(
+	    "-sd",
+	    "-source-dir",
+	    default=None,
+	    help=
+	    "Set source directory paths in json that will be processed. Separate multiple directories with comma."
 	)
 	parser.add_argument(
 	    "-td",
@@ -205,8 +228,7 @@ def main() -> None:
 	    "Optional, test"
 	)
 	parser.add_argument(
-	    "-n",
-	    "-no-operation",
+	    "-dry",
 	    action="store_true",
 	    help=
 	    "Optional, do not perform any file operations."
@@ -276,12 +298,27 @@ def main() -> None:
 	else:
 		print("No valid Czkawka JSON file path provided.")
 		sys.exit()
+	dirsToSetAsSource=[]
 	dirsToSetAsTarget=[]
+	forceSelectBiggestSource=False
+	autoSelectSource=False
+	useCommands=False
+	if args.sd:
+		try:
+			dirsToSetAsSource = re.sub("\'|\"","",args.sd).split(",")
+			print("Source directories from argument: ")
+			pprint(dirsToSetAsSource)
+			# sys.exit()
+		except Exception as e:
+			print(f"Failed to parse source directories. Error: {e}")
+			sys.exit()
+			return None
 	if args.td:
 		try:
-			dirsToSetAsTarget = args.td.split(",")
+			dirsToSetAsTarget = re.sub("\'|\"","",args.td).split(",")
 			print("Target directories from argument: ")
 			pprint(dirsToSetAsTarget)
+			# sys.exit()
 		except Exception as e:
 			print(f"Failed to parse target directories. Error: {e}")
 			sys.exit()
@@ -305,10 +342,13 @@ def main() -> None:
 			excludedDirs.extend((readFromFile(args.edf)).splitlines())
 		else:
 			excludedDirs=readFromFile(args.edf).splitlines()
+	if args.c:
+		useCommands=True
 	# File operation mode, use trash mode if not provided or invalid
 	CZFileOperationMode: str | None = str(args.m) if args.input else None
 	if CZFileOperationMode and CZFileOperationMode in ["d", "t", "o"]:
-		print("File operation mode from argument: ", CZFileOperationMode)
+
+		print("File operation mode from argument:", CZFileOperationMode)
 	else:
 		print(
 		    "No valid file operation mode provided, won't perform any file operations."
@@ -323,7 +363,7 @@ def main() -> None:
 		print(f"Failed to load json file. Error: {e}")
 		sys.exit()
 		return None
-	sys.exit()
+	# sys.exit()
 	# with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
 	CZFilesToBeOverwritten = []
 	CZFilesToBeDeleted = []
@@ -358,11 +398,17 @@ def main() -> None:
 		CZFilesToOperatePerSet: list = []
 		CZFilesToOperatePerSetMapping: dict = {}
 		CZFilesSources = None
+		CZFileIndexnum=0
+		CZFileExcludedFromTargets=[]
+		CZFilesToSetAsSource=[]
 		for fileItem in duplicateSet:
+			CZFileIndexnum+=1
+			targetMatched=False
 			if fileItemsCountLikelyExist <= 1:
 				print(
 				    "Only one file likely exists in this duplicate set, skipping further checks for this set."
 				)
+				# todo: check if biggest file missing.
 				break
 			# fileItem=orjson.loads(orjson.dumps(fileItem))
 
@@ -370,35 +416,91 @@ def main() -> None:
 			filePathInSet = Path(fileItem["path"])
 			# print("File path in the set:", filePathInSet)
 			# sys.exit()
-			if filePathInSet.is_file():
+			if filePathInSet.is_file(): # todo: add premission detection
 				print("File path in the set exists:", filePathInSet)
 			else:
 				print("File path in the set does not exist:", filePathInSet)
 				fileItemsCountLikelyExist -= 1
-			for dirToSetAsTarget in dirsToSetAsTarget:
+			for dst in dirsToSetAsTarget:
 				pattern = re.sub(
-				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dirToSetAsTarget)}.*"
+				    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dst)}(\\|/).+"
 				)  # Fix broken backslashes in pattern
-				if re.match(pattern, fileItem["path"]):
+				# pattern = re.sub(r"\\ ",r" ",pattern)
+				print(pattern)
+				# print(fileItem["path"])
+				# print(str(filePathInSet))
+				# tsdsds="S:\\.+"
+				# print(tsdsds)
+				# tsdsdsraw=r"S:\\.+"
+				# tsdsdsraw=r"^.*S:\\btdl\\adult\\\[F.*"
+				# print(tsdsdsraw)
+				# if re.match(r"^S.+", r"S:\btdl\adult\[forget skyrim]_b68c01f9c98de57b3f268c0c389689547cfc24a5\Clc-Devil-光辉.mp4"):
+				# if re.match("^S.+", fileItem["path"]):
+				# if re.match(pattern, fileItem["path"],flags=re.IGNORECASE):
+				# 	print("matched var pattern!")
+				# if re.match(tsdsdsraw, fileItem["path"],flags=re.IGNORECASE):
+				# 	print("matched tsdsdsraw!")
+				# sys.exit()
+				if re.match(pattern, fileItem["path"],flags=re.IGNORECASE):
 					print(
 					    "File path in the set to be handle:", fileItem["path"]
 					)
 					CZFilesToOperatePerSet.append(fileItem)
-					if len(CZFilesToOperatePerSet) >= len(duplicateSet):
-						print(
-						    "All files in this duplicate set are to handle, picking the largest file as source."
-						)
-						try:
-							CZFilesSources, CZFilesToOperatePerSet = setFitSourceAndTargetFiles(
-							    CZFilesToOperatePerSet
-							)
-						except Exception as e:
-							print(
-							    f"Failed to set biggest file as source. Error: {e}"
-							)
-							sys.exit()
-						break
+					targetMatched=True
 					break
+			if not targetMatched:
+				CZFileExcludedFromTargets.append(fileItem)
+			if len(CZFilesToOperatePerSet) == len(duplicateSet):
+					
+				print(
+					"All files in this duplicate set are to handle, picking the largest file as source."
+				)
+				try:
+					CZFilesSources, CZFilesToOperatePerSet = setFitSourceAndTargetFiles(
+						CZFilesToOperatePerSet
+					)
+				except Exception as e:
+					sys.exit(f"Failed to set biggest file as source. Error: {e}")
+				break
+			elif len(CZFilesToOperatePerSet) < len(duplicateSet) and CZFileIndexnum==len(duplicateSet):
+				# print(len(duplicateSet))
+				# print(f"CZFileExcludedFromTargets: {CZFileExcludedFromTargets}")
+				#todo: Force select biggest file.
+				#todo: Select biggest file in this duplicate set by default.
+				if forceSelectBiggestSource:
+					CZFilesToSetAsSource=CZFileExcludedFromTargets
+				else:
+					for fi in CZFileExcludedFromTargets:
+						if dirsToSetAsSource:
+							sourceMatched=False
+							for dss in dirsToSetAsSource:
+								pattern = re.sub(
+									r"\\\\\\\\", r"\\\\", rf"^{re.escape(dss)}(\\|/).+"
+								)  # Fix broken backslashes in pattern
+								if re.match(pattern, fi["path"],flags=re.IGNORECASE):
+									print(
+										"File path in the set matched source pattern:", fi["path"]
+									)
+									CZFilesToSetAsSource.append(fi)
+									sourceMatched=True
+									break
+							# if sourceMatched==False:
+							# 	sys.exit(f"{fi}")
+						else:
+							if autoSelectSource:
+								CZFilesToSetAsSource=CZFileExcludedFromTargets
+							else:
+								sys.exit(f"Exited. file path: {fi["path"]}, index: {CZFileIndexnum}")
+							#todo: Add auto selecter.
+				if not CZFilesToSetAsSource:
+					sys.exit("Can't find any files to be set as source.")
+				CZFilesSources=getBiggestFile(CZFilesToSetAsSource) # todo: add an option to select the file by real size.
+				print(f"Source file: {CZFilesSources}")
+				# sys.exit()
+				# CZFilesSources=CZFilesSource
+			elif len(CZFilesToOperatePerSet) > len(duplicateSet):
+				sys.exit("WTF? Too many items!")
+		# sys.exit()
 		if CZFilesToOperatePerSet:
 			fileItemsToHandlePaths = [
 			    fi['path'] for fi in CZFilesToOperatePerSet
@@ -417,23 +519,32 @@ def main() -> None:
 			# sys.exit()
 			CZFilesToOperateMapping.append(CZFilesToOperatePerSetMapping)
 	# pprint(CZFilesToOperateMapping)
-	# pprint(CZFilesToOperateMapping)
+	pprint(CZFilesToOperateMapping)
 	fileOperateSet: dict = {}
 	systemCLICommands: str = ""
+	# sys.exit()
 	for fileOperateSetKey in CZFilesToOperateMapping:
 		fileOperateSet = CZFilesToOperateMapping.get(str(fileOperateSetKey))
+		targetFilePaths=[]
 		for targetFile in fileOperateSet["target"]:
 			targetFilePath = Path(targetFile["path"])
-		if CZFileOperationMode == "t":
-			pass
-		elif CZFileOperationMode == "d":
-			CZFilesToBeDeleted.extend(CZFilesToOperatePerSet)
-		elif CZFileOperationMode == "o":
-			CZFilesToBeOverwritten.extend(CZFilesToOperatePerSet)
-		else:
-			print("Unknown file operation mode: ", CZFileOperationMode)
+			targetFilePaths.append(targetFilePath)
+			if useCommands:
+				targetCommands=generateOSCLICommands(operation="overwrite",target=targetFilePath,source=fileOperateSet["source"]["path"])
+	if useCommands:
+		for c in targetCommands:
+			print(c)
+
+
+		# if CZFileOperationMode == "t":
+		# 	pass
+		# elif CZFileOperationMode == "d":
+		# 	CZFilesToBeDeleted.extend(CZFilesToOperatePerSet)
+		# elif CZFileOperationMode == "o":
+		# 	CZFilesToBeOverwritten.extend(CZFilesToOperatePerSet)
+		# else:
+		# 	print("Unknown file operation mode: ", CZFileOperationMode)
 	# sys.exit()
-	# writeToFile(rf"I:\pythontest\python-czkawka-json-test\New Folder", "ssss")
 
 if __name__ == "__main__":
 	main()
