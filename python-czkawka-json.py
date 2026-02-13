@@ -12,9 +12,33 @@ import configparser
 from utils_s import get_encoding, writeToFile,readFromFile,convert_size
 import pandas as pd
 import platform
-import cv2
+# import cv2
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source
+def detectJsonStructure(CZJson):
+	FirstItemCZJson = next(iter(CZJson))
+	isListJson=False
+	n2LevelInSets=False
+	if isinstance(
+		FirstItemCZJson, list
+	):
+		isListJson=True
+	elif isinstance(
+		CZJson.get(FirstItemCZJson)[0], dict
+	):
+		n2LevelInSets = False
+	elif isinstance(
+		CZJson.get(FirstItemCZJson)[0], list
+	):
+		if CZJson.get(FirstItemCZJson
+								)[0][0].get("path"):
+			n2LevelInSets = True
+		else:
+			sys.exit("Unknown structure in czkawka json file.")
+	else:
+		sys.exit("Unknown structure in czkawka json file.")
+	return isListJson,n2LevelInSets
+
 def getBiggestFile(CZFileItems: list) -> None:
 	CZFileItems.sort(key=lambda x: x['size'], reverse=True)
 	# print(CZFileItems)
@@ -95,13 +119,13 @@ def setFitSourceAndTargetFiles(CZFileItems: list,CAFileSource:dict={}) -> None:
 			CZFilesTargetsTemp = CZFileItems
 			for fs in CZFilesSources:
 				CZFilesTargets = [
-				    fi for fi in CZFilesTargetsTemp if fi["path"] != fs["path"]
+				    fi for fi in CZFilesTargetsTemp if fi['path'] != fs['path']
 				]
 		else:
 			print("File to be source: ", CZFilesSources)
 			CZFilesTargets = [
 			    fi
-			    for fi in CZFileItems if fi["path"] != CZFilesSources[0]["path"]
+			    for fi in CZFileItems if fi['path'] != CZFilesSources[0]['path']
 			]
 		if len(CZFilesSources) + len(CZFilesTargets) > len(CZFileItems):
 			print("Mismatch in file counts after setting source and targets.")
@@ -331,29 +355,13 @@ def main() -> None:
 	if cc1>1:
 		sys.exit("Can not use mutiple mode.")
 	try:
-		czkawkaJsonFromFile = orjson.loads(readFromFile(CZJsonFilePath))
+		CZJsonFromFile = orjson.loads(readFromFile(CZJsonFilePath))
 	except Exception as e:
 		# handle_caught_exception(e, known=True)
 		print(f"Failed to load json file. Error: {e}")
 		sys.exit()
 		return None
-	FirstKeyCzkawkaJsonFromFile = next(iter(czkawkaJsonFromFile))
-	# print("FirstKeyCzkawkaJsonFromFile: ", FirstKeyCzkawkaJsonFromFile)
-	# print(type(czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0]))
-	if isinstance(
-		czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], dict
-	):
-		n2LevelInSets = False
-	elif isinstance(
-		czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile)[0], list
-	):
-		if czkawkaJsonFromFile.get(FirstKeyCzkawkaJsonFromFile
-								)[0][0].get("path"):
-			n2LevelInSets = True
-		else:
-			sys.exit("Unknown structure in czkawka json file.")
-	else:
-		sys.exit("Unknown structure in czkawka json file.")
+	isListJson,n2LevelInSets=detectJsonStructure(CZJsonFromFile)
 	# sys.exit()
 	# with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
 	CZJsonDestination=PurePath()
@@ -427,12 +435,12 @@ def main() -> None:
 		CZFilesToBeDeleted = []
 		CZFilesToOperateMapping = []
 		# Proccessing every duplicate set in czkawka json data
-		for duplicateSetKey in czkawkaJsonFromFile:
+		for duplicateSetKey in CZJsonFromFile:
 			# print(duplicateSetKey)
 			if n2LevelInSets:
-				duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))[0]
+				duplicateSet = CZJsonFromFile.get(str(duplicateSetKey))[0]
 			else:
-				duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))
+				duplicateSet = CZJsonFromFile.get(str(duplicateSetKey))
 			fileItemsCountLikelyExist = len(duplicateSet)
 			CZFilesToOperatePerSet: list = []
 			CZFilesToOperatePerSetMapping: dict = {}
@@ -452,7 +460,7 @@ def main() -> None:
 				# fileItem=orjson.loads(orjson.dumps(fileItem))
 
 	# print("File item:", fileItem, "type:", type(fileItem))
-				filePathInSet = Path(fileItem["path"])
+				filePathInSet = Path(fileItem['path'])
 				# print("File path in the set:", filePathInSet)
 				# sys.exit()
 				if filePathInSet.is_file(): # todo: add premission detection
@@ -466,7 +474,7 @@ def main() -> None:
 					)  # Fix broken backslashes in pattern
 					# pattern = re.sub(r"\\ ",r" ",pattern)
 					print(pattern)
-					# print(fileItem["path"])
+					# print(fileItem['path'])
 					# print(str(filePathInSet))
 					# tsdsds="S:\\.+"
 					# print(tsdsds)
@@ -474,15 +482,15 @@ def main() -> None:
 					# tsdsdsraw=r"^.*S:\\btdl\\adult\\\[F.*"
 					# print(tsdsdsraw)
 					# if re.match(r"^S.+", r"S:\btdl\adult\[forget skyrim]_b68c01f9c98de57b3f268c0c389689547cfc24a5\Clc-Devil-光辉.mp4"):
-					# if re.match("^S.+", fileItem["path"]):
-					# if re.match(pattern, fileItem["path"],flags=re.IGNORECASE):
+					# if re.match("^S.+", fileItem['path']):
+					# if re.match(pattern, fileItem['path'],flags=re.IGNORECASE):
 					# 	print("matched var pattern!")
-					# if re.match(tsdsdsraw, fileItem["path"],flags=re.IGNORECASE):
+					# if re.match(tsdsdsraw, fileItem['path'],flags=re.IGNORECASE):
 					# 	print("matched tsdsdsraw!")
 					# sys.exit()
-					if re.match(pattern, fileItem["path"],flags=re.IGNORECASE):
+					if re.match(pattern, fileItem['path'],flags=re.IGNORECASE):
 						print(
-							"File path in the set to be handle:", fileItem["path"]
+							"File path in the set to be handle:", fileItem['path']
 						)
 						CZFilesToOperatePerSet.append(fileItem)
 						targetMatched=True
@@ -516,9 +524,9 @@ def main() -> None:
 									pattern = re.sub(
 										r"\\\\\\\\", r"\\\\", rf"^{re.escape(dss)}(\\|/).+"
 									)  # Fix broken backslashes in pattern
-									if re.match(pattern, fi["path"],flags=re.IGNORECASE):
+									if re.match(pattern, fi['path'],flags=re.IGNORECASE):
 										print(
-											"File path in the set matched source pattern:", fi["path"]
+											"File path in the set matched source pattern:", fi['path']
 										)
 										CZFilesToSetAsSource.append(fi)
 										sourceMatched=True
@@ -529,7 +537,7 @@ def main() -> None:
 								if autoSelectSource:
 									CZFilesToSetAsSource=CZFileExcludedFromTargets
 								else:
-									sys.exit(f"Exited. file path: {fi["path"]}, index: {CZFileIndexNum}")
+									sys.exit(f"Exited. file path: {fi['path']}, index: {CZFileIndexNum}")
 								#todo: Add auto selecter.
 					if not CZFilesToSetAsSource:
 						sys.exit("Can't find any files to be set as source.")
@@ -571,10 +579,10 @@ def main() -> None:
 		# sys.exit()
 		for fileOperateSet in CZFilesToOperateMapping:
 			for targetFile in fileOperateSet["target"]:
-				targetFilePath = Path(targetFile["path"])
+				targetFilePath = Path(targetFile['path'])
 				targetFilePaths.append(targetFilePath)
 				if useCommands:
-					targetCommands.append(generateCLICommands(operation=CZFileOperationModeFull,target=targetFilePath,source=fileOperateSet["source"]["path"]))
+					targetCommands.append(generateCLICommands(operation=CZFileOperationModeFull,target=targetFilePath,source=fileOperateSet["source"]['path']))
 					if CZFileOperationMode=="o":
 						targetFileBackupPath=PurePath(r"S:\btdl\test") / targetFilePath.name
 						backupCommands.append(generateCLICommands(operation="overwrite",target=targetFileBackupPath,source=targetFilePath,toNewFile=True))
@@ -603,37 +611,54 @@ def main() -> None:
 	# print(CZJsonFilePath.name)
 	# sys.exit()
 	if args.i:
-		CZJsonNew={}
-		for duplicateSetKey in czkawkaJsonFromFile:
+		if isListJson:
+			CZJsonNew=[]
+		else:
+			CZJsonNew={}
+		CZJsonFromFileItemIndex=0
+		for duplicateSetKey in CZJsonFromFile:
 			# print(duplicateSetKey)
+			if isListJson:
+				duplicateSet = CZJsonFromFile[CZJsonFromFileItemIndex]
 			if n2LevelInSets:
-				duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))[0]
+				duplicateSet = CZJsonFromFile.get(str(duplicateSetKey))[0]
 			else:
-				duplicateSet = czkawkaJsonFromFile.get(str(duplicateSetKey))
+				duplicateSet = CZJsonFromFile.get(str(duplicateSetKey))
 			fileItemsCountLikelyExist = len(duplicateSet)
 			CZFileIndexNum=0
-			if duplicateSetKey not in CZJsonNew:
+			if isListJson:
+				pass
+			elif duplicateSetKey not in CZJsonNew:
 				CZJsonNew[duplicateSetKey]=[]
+			CZJsonSetTemp=[]
 			for fileItem in duplicateSet:
 				CZFileIndexNum+=1
 				if fileItemsCountLikelyExist <= 1:
 					print(
 						"Only one file likely exists in this duplicate set, skipping further checks for this set."
 					)
-					if duplicateSetKey in CZJsonNew:
+					if isListJson:
+						pass
+					elif duplicateSetKey in CZJsonNew:
 						del CZJsonNew[duplicateSetKey]
 					# todo: check if biggest file missing.
+					CZJsonFromFileItemIndex+=1
 					break
-				filePathInSet = Path(fileItem["path"])
+				filePathInSet = Path(fileItem['path'])
 				# print("File path in the set:", filePathInSet)
 				# sys.exit()
 				if filePathInSet.is_file(): # todo: add premission detection
 					print("File path in the set exists:", filePathInSet)
-					CZJsonNew[duplicateSetKey].append(fileItem)
+					CZJsonSetTemp.append(fileItem)
 				else:
 					print("File path in the set does not exist:", filePathInSet)
 					fileItemsCountLikelyExist -= 1
-		if CZJsonDestination:
+			if isListJson:
+				CZJsonNew.append(CZJsonSetTemp)
+			else:
+				CZJsonNew[duplicateSetKey]=CZJsonSetTemp
+			CZJsonFromFileItemIndex+=1
+		if CZJsonDestination and not args.dry:
 			# writeToFile()
 			writeToFile(
 				str(CZJsonDestination / CZJsonFilePath.name),
@@ -642,40 +667,30 @@ def main() -> None:
 				file_encoding='utf-8'
 			)
 		else:
+			if args.dry:
+				print("Dry test.")
 			pprint(CZJsonNew)
 		if CZJsonNew:
-			CZJsoninput=CZJsonNew
+			CZJsonInput=CZJsonNew
 		else:
-			CZJsoninput=czkawkaJsonFromFile
+			CZJsonInput=CZJsonFromFile
 		if args.cs:
 			releasableSpace=0
-			FirstKeyCZJsonInput = next(iter(CZJsoninput))
-			# print("FirstKeyCZJsonInput: ", FirstKeyCZJsonInput)
-			# print(type(CZJsoninput.get(FirstKeyCZJsonInput)[0]))
-			if isinstance(
-				CZJsoninput.get(FirstKeyCZJsonInput)[0], dict
-			):
-				n2LevelInSets = False
-			elif isinstance(
-				CZJsoninput.get(FirstKeyCZJsonInput)[0], list
-			):
-				if CZJsoninput.get(FirstKeyCZJsonInput
-										)[0][0].get("path"):
-					n2LevelInSets = True
-				else:
-					sys.exit("Unknown structure in czkawka json file.")
-			else:
-				sys.exit("Unknown structure in czkawka json file.")
-			for duplicateSetKey in CZJsoninput:
+			isListJson,n2LevelInSets=detectJsonStructure(CZJsonFromFile)
+			CZJsonInputItemIndex=0
+			for duplicateSetKey in CZJsonInput:
 				# print(duplicateSetKey)
-				if n2LevelInSets:
-					duplicateSet = CZJsoninput.get(str(duplicateSetKey))[0]
+				if isListJson:
+					duplicateSet = CZJsonInput[CZJsonInputItemIndex]
+				elif n2LevelInSets:
+					duplicateSet = CZJsonInput.get(str(duplicateSetKey))[0]
 				else:
-					duplicateSet = CZJsoninput.get(str(duplicateSetKey))
+					duplicateSet = CZJsonInput.get(str(duplicateSetKey))
 				# pprint(duplicateSet)
 				duplicateSet.sort(key=lambda x: x['size'], reverse=True)
 				for fi in duplicateSet[1:]:
 					releasableSpace+=fi["size"]
+				CZJsonInputItemIndex+=1
 				
 			print(convert_size(releasableSpace))
 
