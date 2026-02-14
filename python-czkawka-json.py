@@ -236,14 +236,14 @@ def main() -> None:
 	    "-excluded-dir",
 	    default=None,
 	    help=
-	    "Optional, excluded directory paths in json that will be ignored. Separate multiple directories with comma."
+	    "[Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple directories with comma."
 	)
 	parser.add_argument(
 	    "-edf",
 	    "-excluded-dir-file",
 	    default=None,
 	    help=
-	    "Optional, excluded directory paths in json that will be ignored. Read directories from given file."
+	    "[Placeholder Option]Excluded directory paths in json that will be ignored. Read directories from given file."
 	)
 	parser.add_argument(
 	    "-r", "-read", action="store_true", help="Optional, test"
@@ -251,39 +251,39 @@ def main() -> None:
 	parser.add_argument(
 	    "-dry",
 	    action="store_true",
-	    help="Optional, do not perform any file operations."
+	    help="[Placeholder Option]Do not perform any file operations."
 	)
 	parser.add_argument(
 	    "-g",
 	    "-get-metadata",
 	    action="store_true",
-	    help="Optional, get file metadata by file type."
+	    help="[Placeholder Option]Get file metadata by file type."
 	)
 	parser.add_argument(
 	    "-m",
 	    "-mode",
 	    default=None,
 	    help=
-	    "Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
+	    "File operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
 	)
 	parser.add_argument(
 	    "-nb",
 	    "-no-backup",
 	    action="store_true",
-	    help="Optional, do not create backup before overwrite files."
+	    help="[Placeholder Option]Do not create backup before overwrite files."
 	)
 	parser.add_argument(
 	    "-s",
 	    "-skip-compare",
 	    action="store_true",
 	    help=
-	    "Optional, do not compare files in duplicate sets to filter files for operation."
+	    "[Placeholder Option]Do not compare files in duplicate sets to filter files for operation."
 	)
 	parser.add_argument(
 	    "-d",
 	    "-destination",
 	    default=None,
-	    help="Optional, set destination for saving generated json files."
+	    help="Set destination for saving generated json files."
 	)
 	parser.add_argument(
 	    "-bd",
@@ -307,14 +307,14 @@ def main() -> None:
 	    "-db",
 	    "-debug",
 	    action="store_true",
-	    help="Optional, show debug information."
+	    help="[Placeholder Option]Show debug information."
 	)
 	parser.add_argument(
 	    "-c",
 	    "-command",
 	    action="store_true",
 	    help=
-	    "Optional, give commands for file operations instead of using python."
+	    "Give commands for file operations instead of using python."
 	)
 	parser.add_argument(
 	    "-o",

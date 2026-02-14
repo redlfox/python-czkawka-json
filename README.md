@@ -1,7 +1,8 @@
 # python-czkawka-json
 ## python-czkawka-json.py
-Tool to process Czkawka JSON files.
 ```
+Tool to process Czkawka JSON files.
+
 positional arguments:
   input                 Czkawka JSON file path to process.
 
@@ -15,27 +16,31 @@ options:
                         Optional, target directory paths in json that will be processed, treat all files in duplicate
                         sets as targets if blank. Read directories from given file.
   -ed, -excluded-dir ED
-                        Optional, excluded directory paths in json that will be ignored. Separate multiple directories
-                        with comma.
+                        [Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple
+                        directories with comma.
   -edf, -excluded-dir-file EDF
-                        Optional, excluded directory paths in json that will be ignored. Read directories from given
-                        file.
+                        [Placeholder Option]Excluded directory paths in json that will be ignored. Read directories
+                        from given file.
   -r, -read             Optional, test
-  -dry                  Optional, do not perform any file operations.
-  -g, -get-metadata     Optional, get file metadata by file type.
-  -m, -mode M           Optional, file operation mode. "d" for delete, "t" for trash, "o" for overwrite.
-  -nb, -no-backup       Optional, do not create backup before overwrite files.
-  -s, -skip-compare     Optional, do not compare files in duplicate sets to filter files for operation.
-  -d, -destination D    Optional, set destination for saving generated json files.
+  -dry                  [Placeholder Option]Do not perform any file operations.
+  -g, -get-metadata     [Placeholder Option]Get file metadata by file type.
+  -m, -mode M           File operation mode. "d" for delete, "t" for trash, "o" for overwrite.
+  -nb, -no-backup       [Placeholder Option]Do not create backup before overwrite files.
+  -s, -skip-compare     [Placeholder Option]Do not compare files in duplicate sets to filter files for operation.
+  -d, -destination D    Set destination for saving generated json files.
   -bd, -backup-destination BD
                         backup-destination.
   -p, -json-prefix P    Optional, set prefix of filenames for generated json files to save.
   -rs, -real-sizes      Optional, use real file sizes.
-  -db, -debug           Optional, show debug information.
-  -c, -command          Optional, give commands for file operations instead of using python.
+  -db, -debug           [Placeholder Option]Show debug information.
+  -c, -command          Give commands for file operations instead of using python.
   -o, -organize         Organize files from Czkawka json files.
   -i, -interact         Interact with Czkawka json files.
   -cs, -calculate-space
                         Calculate releasable space from Czkawka json files.
-  -ns, -no-slc          test.
+  -ns, -no-slc          Skip the set if all files be setted as targets.
+```
+example:
+```
+
 ```
