@@ -338,9 +338,11 @@ def main() -> None:
 	    "-ns",
 	    "-no-slc",
 	    action="store_true",
-	    help="test."
+	    help="Skip the set if all files be setted as targets."
 	)
 	args = parser.parse_args()
+	if not args.input:
+		parser.print_help()
 
 	CZJsonFilePath: Path | None = Path(args.input) if args.input else None
 	if CZJsonFilePath and CZJsonFilePath.is_file():
