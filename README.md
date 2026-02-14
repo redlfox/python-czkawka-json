@@ -1,3 +1,4 @@
+# python-czkawka-json
 Tool to process Czkawka JSON files.
 
 positional arguments:
