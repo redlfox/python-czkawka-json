@@ -1,6 +1,6 @@
 # python-czkawka-json
 Tool to process Czkawka JSON files.
-
+```
 positional arguments:
   input                 Czkawka JSON file path to process.
 
@@ -37,3 +37,4 @@ options:
   -cs, -calculate-space
                         Calculate releasable space from Czkawka json files.
   -ns, -no-slc          test.
+```
