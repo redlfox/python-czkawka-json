@@ -1,5 +1,6 @@
 # python-czkawka-json
 ## python-czkawka-json.py
+Useage:
 ```
 Tool to process Czkawka JSON files.
 
@@ -40,11 +41,11 @@ options:
                         Calculate releasable space from Czkawka json files.
   -ns, -no-slc          Skip the set if all files be setted as targets.
 ```
-example:
+Example:
 ```
 # Generate commands to trash matched target files in the given json if atleast one source file matched.
 python3 python-czkawka-json.py -sd [source_path_string] -td [target_path_string] -ns -o -mode t -c [json_file]
 
-# Generate a new json and save to [FileDestination] with same filename. and calculate releasable space from the new json.
+# Generate a new json and save to [FileDestination] with same filename. And calculate releasable space from the new json.
 python3 python-czkawka-json.py -i -cs -d [FileDestination] [json_file]
 ```

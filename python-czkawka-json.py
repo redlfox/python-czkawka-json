@@ -1,4 +1,3 @@
-from html import parser
 from mimetypes import init
 import sys, time, re
 try:
@@ -9,7 +8,7 @@ from pprint import pprint
 from pathlib import Path, PurePath
 import argparse
 import configparser
-from utils_s import get_encoding, writeToFile, readFromFile, readFromFileE, convert_size,getFileOperationMode
+from utils_s import get_encoding, writeToFile, readFromFile, readFromFileE, convert_size, getFileOperationMode
 import pandas as pd
 import platform
 
@@ -38,9 +37,7 @@ def getBiggestFile(CZFileItems: list) -> None:
 	# print(CZFileItems)
 	return CZFileItems[0]
 
-def setFitSourceAndTargetFiles(
-    CZFileItems: list, CAFileSource: dict = {}
-) -> None:
+def setFitSourceAndTargetFiles(CZFileItems: list, CAFileSource: dict = {}) -> None:
 	CZFilesEqualSizeSorted = []
 	CZFilesSorting = []
 	CZFilesSorted = []
@@ -48,18 +45,11 @@ def setFitSourceAndTargetFiles(
 	CZFilesTargets = []
 	CZFilesTargetsTemp = []
 	CZFileItemsPaths = [fi['path'] for fi in CZFileItems]
-	CZFileItemsDupPaths = set(
-	    [fp for fp in CZFileItemsPaths if CZFileItemsPaths.count(fp) > 1]
-	)
+	CZFileItemsDupPaths = set([fp for fp in CZFileItemsPaths if CZFileItemsPaths.count(fp) > 1])
 	if CZFileItemsDupPaths:
-		print(
-		    "Duplicate file paths found in czkawka file items:",
-		    CZFileItemsDupPaths
-		)
+		print("Duplicate file paths found in czkawka file items:", CZFileItemsDupPaths)
 		CZFileItemsDF = pd.DataFrame(CZFileItems)
-		CZFileItemsDF.drop_duplicates(
-		    subset=['path'], keep='last', inplace=True
-		)
+		CZFileItemsDF.drop_duplicates(subset=['path'], keep='last', inplace=True)
 		CZFileItems = CZFileItemsDF.to_dict("records")
 		print("Removed duplicate file paths.")
 	if not CZFileItems or len(CZFileItems) == 0:
@@ -71,35 +61,24 @@ def setFitSourceAndTargetFiles(
 	# pprint(CZFilesSizes)
 
 	while len(CZFilesSizes) > 0:
-		CZFilesEqualSize = [
-		    fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]
-		]
+		CZFilesEqualSize = [fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]]
 		# print("czkawkaFileItemsInASize:", CZFilesEqualSize)
 		CZFilesEqualSizeSorted = []
 		if len(CZFilesEqualSize) > 1:
-			CZFilesEqualSize.sort(
-			    key=lambda x: len(Path(x['path']).parts), reverse=False
-			)
-			CZFilesEqualSizePathDepths = [
-			    len(Path(fi['path']).parts) for fi in CZFilesEqualSize
-			]
+			CZFilesEqualSize.sort(key=lambda x: len(Path(x['path']).parts), reverse=False)
+			CZFilesEqualSizePathDepths = [len(Path(fi['path']).parts) for fi in CZFilesEqualSize]
 			# print(
 			#     "czkawkaFileItemsInASizePathLength:", CZFilesEqualSizePathDepths
 			# )
 			while len(CZFilesEqualSizePathDepths) > 0:
 				CZFilesInSameDepth = [
-				    fi for fi in CZFilesEqualSize if
-				    len(Path(fi['path']).parts) == CZFilesEqualSizePathDepths[0]
+				    fi for fi in CZFilesEqualSize if len(Path(fi['path']).parts) == CZFilesEqualSizePathDepths[0]
 				]
 				if len(CZFilesInSameDepth) > 1:
-					CZFilesInSameDepth.sort(
-					    key=lambda x: len(PurePath(x['path']).name),
-					    reverse=True
-					)
+					CZFilesInSameDepth.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
 					# print("czkawkaFileItemsInSameDepth:", CZFilesInSameDepth)
 				CZFilesEqualSizePathDepths = [
-				    pd for pd in CZFilesEqualSizePathDepths
-				    if pd != CZFilesEqualSizePathDepths[0]
+				    pd for pd in CZFilesEqualSizePathDepths if pd != CZFilesEqualSizePathDepths[0]
 				]
 				CZFilesEqualSizeSorted.extend(CZFilesInSameDepth)
 		else:
@@ -114,15 +93,10 @@ def setFitSourceAndTargetFiles(
 			print("Files to be source:", CZFilesSources)
 			CZFilesTargetsTemp = CZFileItems
 			for fs in CZFilesSources:
-				CZFilesTargets = [
-				    fi for fi in CZFilesTargetsTemp if fi['path'] != fs['path']
-				]
+				CZFilesTargets = [fi for fi in CZFilesTargetsTemp if fi['path'] != fs['path']]
 		else:
 			print("File to be source:", CZFilesSources)
-			CZFilesTargets = [
-			    fi
-			    for fi in CZFileItems if fi['path'] != CZFilesSources[0]['path']
-			]
+			CZFilesTargets = [fi for fi in CZFileItems if fi['path'] != CZFilesSources[0]['path']]
 		if len(CZFilesSources) + len(CZFilesTargets) > len(CZFileItems):
 			print("Mismatch in file counts after setting source and targets.")
 			return ([], [])
@@ -131,20 +105,16 @@ def setFitSourceAndTargetFiles(
 		print("No valid files found to remove.")
 
 def generateCLICommands(
-    operation: str,
-    target: Path,
-    source: Path = None,
-    forceConfirm: bool = False,
-    gioTrash: bool = False,
+    operation: str, target: Path, source: Path = None, forceConfirm: bool = False, gioTrash: bool = False,
     toNewFile: bool = False
 ) -> str:
 	SystemType = platform.system()
 	commandArguments = ""
 	forceExecuteOption = ""
 	newFileOption = ""
-	targetStr=str(target)
+	targetStr = str(target)
 	if SystemType == "Linux" or SystemType == "Darwin":
-		if re.match(r".*([`'!]).*", targetStr):  # also for cygwin and msys2
+		if re.match(r".*([`'!]).*", targetStr):  # Also for cygwin and msys2
 			targetStr = re.sub(r"([\s`'!()&])", r"\\\1", targetStr)
 		else:
 			targetStr = '"{}"'.format(target)
@@ -190,10 +160,7 @@ def generateCLICommands(
 	else:
 		print("Unknown file operation:", operation)
 		return ""
-	if not (
-	    SystemType == "Linux" or SystemType == "Darwin" or
-	    SystemType == "Windows"
-	):
+	if not (SystemType == "Linux" or SystemType == "Darwin" or SystemType == "Windows"):
 		print("Unsupported system type for file operations:", SystemType)
 		return ""
 
@@ -201,145 +168,59 @@ def main() -> None:
 
 	init()
 
-	parser = argparse.ArgumentParser(
-	    description="Tool to process Czkawka JSON files."
+	parser = argparse.ArgumentParser(description="Tool to process Czkawka JSON files.")
+	parser.add_argument("input", nargs="?", default=None, help="Czkawka JSON file path to process.")
+	parser.add_argument(
+	    "-sd", "-source-dir", default=None,
+	    help="Set source directory paths in json that will be processed. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "input",
-	    nargs="?",
-	    default=None,
-	    help="Czkawka JSON file path to process."
+	    "-td", "-target-dir", default=None,
+	    help="Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "-sd",
-	    "-source-dir",
-	    default=None,
-	    help=
-	    "Set source directory paths in json that will be processed. Separate multiple directories with comma."
+	    "-tdf", "-target-dir-file", default=None,
+	    help="Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
 	)
 	parser.add_argument(
-	    "-td",
-	    "-target-dir",
-	    default=None,
-	    help=
-	    "Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
+	    "-ed", "-excluded-dir", default=None,
+	    help="[Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "-tdf",
-	    "-target-dir-file",
-	    default=None,
-	    help=
-	    "Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
+	    "-edf", "-excluded-dir-file", default=None,
+	    help="[Placeholder Option]Excluded directory paths in json that will be ignored. Read directories from given file."
+	)
+	parser.add_argument("-r", "-read", action="store_true", help="Optional, test")
+	parser.add_argument("-dry", action="store_true", help="[Placeholder Option]Do not perform any file operations.")
+	parser.add_argument(
+	    "-g", "-get-metadata", action="store_true", help="[Placeholder Option]Get file metadata by file type."
 	)
 	parser.add_argument(
-	    "-ed",
-	    "-excluded-dir",
-	    default=None,
-	    help=
-	    "[Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple directories with comma."
+	    "-m", "-mode", default=None, help="File operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
 	)
 	parser.add_argument(
-	    "-edf",
-	    "-excluded-dir-file",
-	    default=None,
-	    help=
-	    "[Placeholder Option]Excluded directory paths in json that will be ignored. Read directories from given file."
+	    "-nb", "-no-backup", action="store_true", help="[Placeholder Option]Do not create backup before overwrite files."
 	)
 	parser.add_argument(
-	    "-r", "-read", action="store_true", help="Optional, test"
+	    "-s", "-skip-compare", action="store_true",
+	    help="[Placeholder Option]Do not compare files in duplicate sets to filter files for operation."
 	)
+	parser.add_argument("-d", "-destination", default=None, help="Set destination for saving generated json files.")
+	parser.add_argument("-bd", "-backup-destination", default=None, help="backup-destination.")
 	parser.add_argument(
-	    "-dry",
-	    action="store_true",
-	    help="[Placeholder Option]Do not perform any file operations."
+	    "-p", "-json-prefix", default=None, help="Optional, set prefix of filenames for generated json files to save."
 	)
+	parser.add_argument("-rs", "-real-sizes", action="store_true", help="Optional, use real file sizes.")
+	parser.add_argument("-db", "-debug", action="store_true", help="[Placeholder Option]Show debug information.")
 	parser.add_argument(
-	    "-g",
-	    "-get-metadata",
-	    action="store_true",
-	    help="[Placeholder Option]Get file metadata by file type."
+	    "-c", "-command", action="store_true", help="Give commands for file operations instead of using python."
 	)
+	parser.add_argument("-o", "-organize", action="store_true", help="Organize files from Czkawka json files.")
+	parser.add_argument("-i", "-interact", action="store_true", help="Interact with Czkawka json files.")
 	parser.add_argument(
-	    "-m",
-	    "-mode",
-	    default=None,
-	    help=
-	    "File operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
+	    "-cs", "-calculate-space", action="store_true", help="Calculate releasable space from Czkawka json files."
 	)
-	parser.add_argument(
-	    "-nb",
-	    "-no-backup",
-	    action="store_true",
-	    help="[Placeholder Option]Do not create backup before overwrite files."
-	)
-	parser.add_argument(
-	    "-s",
-	    "-skip-compare",
-	    action="store_true",
-	    help=
-	    "[Placeholder Option]Do not compare files in duplicate sets to filter files for operation."
-	)
-	parser.add_argument(
-	    "-d",
-	    "-destination",
-	    default=None,
-	    help="Set destination for saving generated json files."
-	)
-	parser.add_argument(
-	    "-bd",
-	    "-backup-destination",
-	    default=None,
-	    help="backup-destination."
-	)
-	parser.add_argument(
-	    "-p",
-	    "-json-prefix",
-	    default=None,
-	    help="Optional, set prefix of filenames for generated json files to save."
-	)
-	parser.add_argument(
-	    "-rs",
-	    "-real-sizes",
-	    action="store_true",
-	    help="Optional, use real file sizes."
-	)
-	parser.add_argument(
-	    "-db",
-	    "-debug",
-	    action="store_true",
-	    help="[Placeholder Option]Show debug information."
-	)
-	parser.add_argument(
-	    "-c",
-	    "-command",
-	    action="store_true",
-	    help=
-	    "Give commands for file operations instead of using python."
-	)
-	parser.add_argument(
-	    "-o",
-	    "-organize",
-	    action="store_true",
-	    help="Organize files from Czkawka json files."
-	)
-	parser.add_argument(
-	    "-i",
-	    "-interact",
-	    action="store_true",
-	    help="Interact with Czkawka json files."
-	)
-	parser.add_argument(
-	    "-cs",
-	    "-calculate-space",
-	    action="store_true",
-	    help="Calculate releasable space from Czkawka json files."
-	)
-	parser.add_argument(
-	    "-ns",
-	    "-no-slc",
-	    action="store_true",
-	    help="Skip the set if all files be setted as targets."
-	)
+	parser.add_argument("-ns", "-no-slc", action="store_true", help="Skip the set if all files be setted as targets.")
 	args = parser.parse_args()
 	if not args.input:
 		parser.print_help()
@@ -359,7 +240,7 @@ def main() -> None:
 		sys.exit("Can not use mutiple mode.")
 	try:
 		# CZJsonFromFile = orjson.loads(readFromFile(CZJsonFilePath))
-		CZJsonFromFile = orjson.loads(readFromFileE(CZJsonFilePath,"utf-8"))
+		CZJsonFromFile = orjson.loads(readFromFileE(CZJsonFilePath, "utf-8"))
 	except Exception as e:
 		# handle_caught_exception(e, known=True)
 		print(f"Failed to load json file. Error: {e}")
@@ -421,7 +302,7 @@ def main() -> None:
 			useCommands = True
 		# File operation mode.
 		CZFileOperationMode: str | None = str(args.m) if args.input else None
-		CZFileOperationModeFull=getFileOperationMode(CZFileOperationMode)
+		CZFileOperationModeFull = getFileOperationMode(CZFileOperationMode)
 
 		CZFilesToBeOverwritten = []
 		CZFilesToBeDeleted = []
@@ -446,7 +327,7 @@ def main() -> None:
 				CZFileIndexNum += 1
 				targetMatched = False
 
-	# print("File item:", fileItem, "type:", type(fileItem))
+				# print("File item:", fileItem, "type:", type(fileItem))
 				filePathInSet = Path(fileItem['path'])
 				# print("File path in the set:", filePathInSet)
 				# sys.exit()
@@ -456,9 +337,7 @@ def main() -> None:
 					print("File path in the set does not exist:", filePathInSet)
 					fileItemsCountLikelyExist -= 1
 				if fileItemsCountLikelyExist <= 1:
-					print(
-					    "Only one file likely exists in this duplicate set, skipping further checks for this set."
-					)
+					print("Only one file likely exists in this duplicate set, skipping further checks for this set.")
 					# todo: check if biggest file missing.
 					break
 				for dst in dirsToSetAsTarget:
@@ -475,10 +354,7 @@ def main() -> None:
 					# 	print("matched tsdsdsraw!")
 					# sys.exit()
 					if re.match(pattern, fileItem['path'], flags=re.IGNORECASE):
-						print(
-						    "File path in the set to be handle:",
-						    fileItem['path']
-						)
+						print("File path in the set to be handle:", fileItem['path'])
 						CZFilesToOperatePerSet.append(fileItem)
 						targetMatched = True
 						break
@@ -486,26 +362,16 @@ def main() -> None:
 					CZFileExcludedFromTargets.append(fileItem)
 				if len(CZFilesToOperatePerSet) == len(duplicateSet):
 					if args.ns:
-						print(
-							"All files in this duplicate set are to handle, skipping this set."
-						)
+						print("All files in this duplicate set are to handle, skipping this set.")
 					else:
-						print(
-							"All files in this duplicate set are to handle, picking the largest file as source."
-						)
+						print("All files in this duplicate set are to handle, picking the largest file as source.")
 						try:
-							CZFilesSources, CZFilesToOperatePerSet = setFitSourceAndTargetFiles(
-								CZFilesToOperatePerSet
-							)
-							CZFilesSources=CZFilesSources[0]
+							CZFilesSources, CZFilesToOperatePerSet = setFitSourceAndTargetFiles(CZFilesToOperatePerSet)
+							CZFilesSources = CZFilesSources[0]
 						except Exception as e:
-							sys.exit(
-								f"Failed to set biggest file as source. Error: {e}"
-							)
+							sys.exit(f"Failed to set biggest file as source. Error: {e}")
 					break
-				elif len(CZFilesToOperatePerSet) < len(
-				    duplicateSet
-				) and CZFileIndexNum == len(duplicateSet):
+				elif len(CZFilesToOperatePerSet) < len(duplicateSet) and CZFileIndexNum == len(duplicateSet):
 					# print(len(duplicateSet))
 					# print(f"CZFileExcludedFromTargets: {CZFileExcludedFromTargets}")
 					#todo: Force select biggest file.
@@ -518,18 +384,10 @@ def main() -> None:
 								sourceMatched = False
 								for dss in dirsToSetAsSource:
 									pattern = re.sub(
-									    r"\\\\\\\\", r"\\\\",
-									    rf"^{re.escape(dss)}(\\|/).+"
+									    r"\\\\\\\\", r"\\\\", rf"^{re.escape(dss)}(\\|/).+"
 									)  # Fix broken backslashes in pattern
-									if re.match(
-									    pattern,
-									    fi['path'],
-									    flags=re.IGNORECASE
-									):
-										print(
-										    "File path in the set matched source pattern:",
-										    fi['path']
-										)
+									if re.match(pattern, fi['path'], flags=re.IGNORECASE):
+										print("File path in the set matched source pattern:", fi['path'])
 										CZFilesToSetAsSource.append(fi)
 										sourceMatched = True
 										break
@@ -539,9 +397,7 @@ def main() -> None:
 								if autoSelectSource:
 									CZFilesToSetAsSource = CZFileExcludedFromTargets
 								else:
-									sys.exit(
-									    f"Exited. file path: {fi['path']}, index: {CZFileIndexNum}"
-									)
+									sys.exit(f"Exited. file path: {fi['path']}, index: {CZFileIndexNum}")
 								#todo: Add auto selecter.
 					if not CZFilesSources:
 						if not CZFilesToSetAsSource:
@@ -549,7 +405,7 @@ def main() -> None:
 							# sys.exit("Can't find any files to be set as source.")
 						else:
 							CZFilesSources = getBiggestFile(
-								CZFilesToSetAsSource
+							    CZFilesToSetAsSource
 							)  # todo: add an option to select the file by real size.
 							print(f"Source file: {CZFilesSources}")
 							# sys.exit()
@@ -560,19 +416,8 @@ def main() -> None:
 			if not CZFilesSources:
 				continue
 			if CZFilesToOperatePerSet:
-				fileItemsToHandlePaths = [
-				    fi['path'] for fi in CZFilesToOperatePerSet
-				]
-				print(
-				    "Files to handle in this duplicate set:",
-				    fileItemsToHandlePaths
-				)
-				# print("Files to handle in this duplicate set:", fileItemsToHandle)
-				# CZFilesToOperatePerSetMapping[duplicateSetKey] = {}
-				# CZFilesToOperatePerSetMapping[duplicateSetKey]["source"
-				#                                               ] = CZFilesSources
-				# CZFilesToOperatePerSetMapping[duplicateSetKey][
-				#     "target"] = CZFilesToOperatePerSet
+				fileItemsToHandlePaths = [fi['path'] for fi in CZFilesToOperatePerSet]
+				print("Files to handle in this duplicate set:", fileItemsToHandlePaths)
 				CZFilesToOperatePerSetMapping["source"] = CZFilesSources
 				CZFilesToOperatePerSetMapping["target"] = CZFilesToOperatePerSet
 				# pprint(fileItemsToHandleStructure)
@@ -594,33 +439,29 @@ def main() -> None:
 				if useCommands:
 					targetCommands.append(
 					    generateCLICommands(
-					        operation=CZFileOperationModeFull,
-					        target=targetFilePath,
+					        operation=CZFileOperationModeFull, target=targetFilePath,
 					        source=fileOperateSet['source']['path']
 					    )
 					)
 					if CZFileOperationMode == "o":
 						if args.bd:
-							targetFileBackupPath = PurePath(
-								args.bd
-							) / targetFilePath.name
+							targetFileBackupPath = PurePath(args.bd) / targetFilePath.name
 							backupCommands.append(
-								generateCLICommands(
-									operation="overwrite",
-									target=targetFileBackupPath,
-									source=targetFilePath,
-									toNewFile=True
-								)
+							    generateCLICommands(
+							        operation="overwrite", target=targetFileBackupPath, source=targetFilePath,
+							        toNewFile=True
+							    )
 							)
 
 		if CZFileOperationMode == "o":
 			afsasaf = "\n".join(str(fi) for fi in targetFilePaths)
 			print(afsasaf)
 		if useCommands:
-			print("generated backup commands:")
-			for c in backupCommands:
-				print(c)
-			print("generated commands:")
+			if backupCommands:
+				print("generated backup commands:")
+				for c in backupCommands:
+					print(c)
+			print("generated file commands:")
 			for c in targetCommands:
 				print(c)
 
@@ -643,7 +484,6 @@ def main() -> None:
 		CZJsonFromFileItemIndex = 0
 		for duplicateSetKey in CZJsonFromFile:
 			# print(duplicateSetKey)
-			# print(duplicateSetKey)
 			# print(CZJsonFromFileItemIndex)
 			if isListJson:
 				duplicateSet = CZJsonFromFile[CZJsonFromFileItemIndex]
@@ -658,7 +498,7 @@ def main() -> None:
 			# elif duplicateSetKey not in CZJsonNew:
 			# 	CZJsonNew[duplicateSetKey]=[]
 			CZJsonSetTemp = []
-			skipSet=False
+			skipSet = False
 			for fileItem in duplicateSet:
 				CZFileIndexNum += 1
 				filePathInSet = Path(fileItem['path'])
@@ -671,15 +511,13 @@ def main() -> None:
 					print("File path in the set does not exist:", filePathInSet)
 					fileItemsCountLikelyExist -= 1
 				if fileItemsCountLikelyExist <= 1:
-					print(
-					    "Only one file likely exists in this duplicate set, skipping further checks for this set."
-					)
+					print("Only one file likely exists in this duplicate set, skipping further checks for this set.")
 					# if isListJson:
 					# 	pass
 					# elif duplicateSetKey in CZJsonNew:
 					# 	del CZJsonNew[duplicateSetKey]
 					# todo: check if biggest file missing.
-					skipSet=True
+					skipSet = True
 					break
 			if not skipSet:
 				if isListJson:
@@ -691,10 +529,7 @@ def main() -> None:
 			# writeToFile()
 			writeToFile(
 			    str(CZJsonDestination / CZJsonFilePath.name),
-			    orjson.dumps(CZJsonNew,
-			                 option=orjson.OPT_INDENT_2).decode('utf-8'),
-			    openmode='w',
-			    file_encoding='utf-8'
+			    orjson.dumps(CZJsonNew, option=orjson.OPT_INDENT_2).decode('utf-8'), openmode='w', file_encoding='utf-8'
 			)
 		else:
 			if args.dry:

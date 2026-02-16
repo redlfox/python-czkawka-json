@@ -9,7 +9,7 @@ from pprint import pprint
 from pathlib import Path, PurePath
 import argparse
 import configparser
-from utils_s import get_encoding, writeToFile, readFromFile, readFromFileE, convert_size,getFileOperationMode,getBatchFileExt
+from utils_s import get_encoding, writeToFile, readFromFile, readFromFileE, convert_size, getFileOperationMode, getBatchFileExt
 import pandas as pd
 import platform
 
@@ -38,9 +38,7 @@ def getBiggestFile(CZFileItems: list) -> None:
 	# print(CZFileItems)
 	return CZFileItems[0]
 
-def setFitSourceAndTargetFiles(
-    CZFileItems: list, CAFileSource: dict = {}
-) -> None:
+def setFitSourceAndTargetFiles(CZFileItems: list, CAFileSource: dict = {}) -> None:
 	CZFilesEqualSizeSorted = []
 	CZFilesSorting = []
 	CZFilesSorted = []
@@ -48,18 +46,11 @@ def setFitSourceAndTargetFiles(
 	CZFilesTargets = []
 	CZFilesTargetsTemp = []
 	CZFileItemsPaths = [fi['path'] for fi in CZFileItems]
-	CZFileItemsDupPaths = set(
-	    [fp for fp in CZFileItemsPaths if CZFileItemsPaths.count(fp) > 1]
-	)
+	CZFileItemsDupPaths = set([fp for fp in CZFileItemsPaths if CZFileItemsPaths.count(fp) > 1])
 	if CZFileItemsDupPaths:
-		print(
-		    "Duplicate file paths found in czkawka file items:",
-		    CZFileItemsDupPaths
-		)
+		print("Duplicate file paths found in czkawka file items:", CZFileItemsDupPaths)
 		CZFileItemsDF = pd.DataFrame(CZFileItems)
-		CZFileItemsDF.drop_duplicates(
-		    subset=['path'], keep='last', inplace=True
-		)
+		CZFileItemsDF.drop_duplicates(subset=['path'], keep='last', inplace=True)
 		CZFileItems = CZFileItemsDF.to_dict("records")
 		print("Removed duplicate file paths.")
 	if not CZFileItems or len(CZFileItems) == 0:
@@ -71,35 +62,24 @@ def setFitSourceAndTargetFiles(
 	# pprint(CZFilesSizes)
 
 	while len(CZFilesSizes) > 0:
-		CZFilesEqualSize = [
-		    fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]
-		]
+		CZFilesEqualSize = [fi for fi in CZFileItems if fi["size"] == CZFilesSizes[0]]
 		# print("czkawkaFileItemsInASize:", CZFilesEqualSize)
 		CZFilesEqualSizeSorted = []
 		if len(CZFilesEqualSize) > 1:
-			CZFilesEqualSize.sort(
-			    key=lambda x: len(Path(x['path']).parts), reverse=False
-			)
-			CZFilesEqualSizePathDepths = [
-			    len(Path(fi['path']).parts) for fi in CZFilesEqualSize
-			]
+			CZFilesEqualSize.sort(key=lambda x: len(Path(x['path']).parts), reverse=False)
+			CZFilesEqualSizePathDepths = [len(Path(fi['path']).parts) for fi in CZFilesEqualSize]
 			# print(
 			#     "czkawkaFileItemsInASizePathLength:", CZFilesEqualSizePathDepths
 			# )
 			while len(CZFilesEqualSizePathDepths) > 0:
 				CZFilesInSameDepth = [
-				    fi for fi in CZFilesEqualSize if
-				    len(Path(fi['path']).parts) == CZFilesEqualSizePathDepths[0]
+				    fi for fi in CZFilesEqualSize if len(Path(fi['path']).parts) == CZFilesEqualSizePathDepths[0]
 				]
 				if len(CZFilesInSameDepth) > 1:
-					CZFilesInSameDepth.sort(
-					    key=lambda x: len(PurePath(x['path']).name),
-					    reverse=True
-					)
+					CZFilesInSameDepth.sort(key=lambda x: len(PurePath(x['path']).name), reverse=True)
 					# print("czkawkaFileItemsInSameDepth:", CZFilesInSameDepth)
 				CZFilesEqualSizePathDepths = [
-				    pd for pd in CZFilesEqualSizePathDepths
-				    if pd != CZFilesEqualSizePathDepths[0]
+				    pd for pd in CZFilesEqualSizePathDepths if pd != CZFilesEqualSizePathDepths[0]
 				]
 				CZFilesEqualSizeSorted.extend(CZFilesInSameDepth)
 		else:
@@ -114,15 +94,10 @@ def setFitSourceAndTargetFiles(
 			print("Files to be source:", CZFilesSources)
 			CZFilesTargetsTemp = CZFileItems
 			for fs in CZFilesSources:
-				CZFilesTargets = [
-				    fi for fi in CZFilesTargetsTemp if fi['path'] != fs['path']
-				]
+				CZFilesTargets = [fi for fi in CZFilesTargetsTemp if fi['path'] != fs['path']]
 		else:
 			print("File to be source:", CZFilesSources)
-			CZFilesTargets = [
-			    fi
-			    for fi in CZFileItems if fi['path'] != CZFilesSources[0]['path']
-			]
+			CZFilesTargets = [fi for fi in CZFileItems if fi['path'] != CZFilesSources[0]['path']]
 		if len(CZFilesSources) + len(CZFilesTargets) > len(CZFileItems):
 			print("Mismatch in file counts after setting source and targets.")
 			return ([], [])
@@ -131,11 +106,7 @@ def setFitSourceAndTargetFiles(
 		print("No valid files found to remove.")
 
 def generateCLICommands(
-    operation: str,
-    target: Path,
-    source: Path = None,
-    forceConfirm: bool = False,
-    gioTrash: bool = False,
+    operation: str, target: Path, source: Path = None, forceConfirm: bool = False, gioTrash: bool = False,
     toNewFile: bool = False
 ) -> str:
 	SystemType = platform.system()
@@ -190,148 +161,69 @@ def generateCLICommands(
 	else:
 		print("Unknown file operation:", operation)
 		return ""
-	if not (
-	    SystemType == "Linux" or SystemType == "Darwin" or
-	    SystemType == "Windows"
-	):
+	if not (SystemType == "Linux" or SystemType == "Darwin" or SystemType == "Windows"):
 		print("Unsupported system type for file operations:", SystemType)
 		return ""
 
 def main() -> None:
 
 	init()
-	batchFileExt=getBatchFileExt()
+	batchFileExt = getBatchFileExt()
 	parser = argparse.ArgumentParser(description="Tool to process files.")
+	parser.add_argument("input", nargs="?", default=None, help="file path to process.")
 	parser.add_argument(
-	    "input", nargs="?", default=None, help="file path to process."
+	    "-sd", "-source-dir", default=None,
+	    help="Set source directory paths in json that will be processed. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "-sd",
-	    "-source-dir",
-	    default=None,
-	    help=
-	    "Set source directory paths in json that will be processed. Separate multiple directories with comma."
+	    "-td", "-target-dir", default=None,
+	    help="Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "-td",
-	    "-target-dir",
-	    default=None,
-	    help=
-	    "Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
+	    "-tdf", "-target-dir-file", default=None,
+	    help="Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
 	)
 	parser.add_argument(
-	    "-tdf",
-	    "-target-dir-file",
-	    default=None,
-	    help=
-	    "Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
+	    "-ed", "-excluded-dir", default=None,
+	    help="Optional, excluded directory paths in json that will be ignored. Separate multiple directories with comma."
 	)
 	parser.add_argument(
-	    "-ed",
-	    "-excluded-dir",
-	    default=None,
-	    help=
-	    "Optional, excluded directory paths in json that will be ignored. Separate multiple directories with comma."
+	    "-edf", "-excluded-dir-file", default=None,
+	    help="Optional, excluded directory paths in json that will be ignored. Read directories from given file."
+	)
+	parser.add_argument("-r", "-read", action="store_true", help="Optional, test")
+	parser.add_argument("-dry", action="store_true", help="Optional, do not perform any file operations.")
+	parser.add_argument(
+	    "-fe", "-filter-exist", action="store_true", help="Filter to include existing files and folders."
+	)
+	parser.add_argument("-ff", "-filter-file", action="store_true", help="Filter to include existing files.")
+	parser.add_argument(
+	    "-m", "-mode", default=None,
+	    help="Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
 	)
 	parser.add_argument(
-	    "-edf",
-	    "-excluded-dir-file",
-	    default=None,
-	    help=
-	    "Optional, excluded directory paths in json that will be ignored. Read directories from given file."
+	    "-nb", "-no-backup", action="store_true", help="Optional, do not create backup before overwrite files."
 	)
 	parser.add_argument(
-	    "-r", "-read", action="store_true", help="Optional, test"
+	    "-s", "-skip-compare", action="store_true",
+	    help="Optional, do not compare files in duplicate sets to filter files for operation."
 	)
 	parser.add_argument(
-	    "-dry",
-	    action="store_true",
-	    help="Optional, do not perform any file operations."
+	    "-d", "-destination", default=None, help="Optional, set destination for saving generated json files."
 	)
+	parser.add_argument("-bd", "-backup-destination", default=None, help="backup-destination.")
 	parser.add_argument(
-	    "-fe",
-	    "-filter-exist",
-	    action="store_true",
-	    help="Filter to include existing files and folders."
+	    "-p", "-json-prefix", default=None, help="Optional, set prefix of filenames for generated json files to save."
 	)
+	parser.add_argument("-rs", "-real-sizes", action="store_true", help="Optional, use real file sizes.")
+	parser.add_argument("-db", "-debug", action="store_true", help="Optional, show debug information.")
 	parser.add_argument(
-	    "-ff",
-	    "-filter-file",
-	    action="store_true",
-	    help="Filter to include existing files."
+	    "-c", "-command", action="store_true",
+	    help="Optional, give commands for file operations instead of using python."
 	)
-	parser.add_argument(
-	    "-m",
-	    "-mode",
-	    default=None,
-	    help=
-	    "Optional, file operation mode. \"d\" for delete, \"t\" for trash, \"o\" for overwrite."
-	)
-	parser.add_argument(
-	    "-nb",
-	    "-no-backup",
-	    action="store_true",
-	    help="Optional, do not create backup before overwrite files."
-	)
-	parser.add_argument(
-	    "-s",
-	    "-skip-compare",
-	    action="store_true",
-	    help=
-	    "Optional, do not compare files in duplicate sets to filter files for operation."
-	)
-	parser.add_argument(
-	    "-d",
-	    "-destination",
-	    default=None,
-	    help="Optional, set destination for saving generated json files."
-	)
-	parser.add_argument(
-	    "-bd",
-	    "-backup-destination",
-	    default=None,
-	    help="backup-destination."
-	)
-	parser.add_argument(
-	    "-p",
-	    "-json-prefix",
-	    default=None,
-	    help="Optional, set prefix of filenames for generated json files to save."
-	)
-	parser.add_argument(
-	    "-rs",
-	    "-real-sizes",
-	    action="store_true",
-	    help="Optional, use real file sizes."
-	)
-	parser.add_argument(
-	    "-db",
-	    "-debug",
-	    action="store_true",
-	    help="Optional, show debug information."
-	)
-	parser.add_argument(
-	    "-c",
-	    "-command",
-	    action="store_true",
-	    help=
-	    "Optional, give commands for file operations instead of using python."
-	)
-	parser.add_argument(
-	    "-o",
-	    "-organize",
-	    action="store_true",
-	    help="Organize files from files."
-	)
-	parser.add_argument(
-	    "-i", "-interact", action="store_true", help="Interact with files."
-	)
-	parser.add_argument(
-	    "-cs",
-	    "-calculate-space",
-	    action="store_true",
-	    help="Calculate releasable space from files."
-	)
+	parser.add_argument("-o", "-organize", action="store_true", help="Organize files from files.")
+	parser.add_argument("-i", "-interact", action="store_true", help="Interact with files.")
+	parser.add_argument("-cs", "-calculate-space", action="store_true", help="Calculate releasable space from files.")
 	parser.add_argument("-ns", "-no-slc", action="store_true", help="test.")
 	args = parser.parse_args()
 
@@ -368,10 +260,10 @@ def main() -> None:
 			if path.is_file():
 				pathListNew.append(path)
 	if pathListNew:
-		pathListInput=pathListNew
+		pathListInput = pathListNew
 	else:
-		pathListInput=PathListFromFile
-		
+		pathListInput = PathListFromFile
+
 	FileDestination = PurePath()
 	if args.d:
 		FileDestination = PurePath(args.d)
@@ -425,7 +317,7 @@ def main() -> None:
 			useCommands = True
 		# File operation mode.
 		fileOperationMode: str | None = str(args.m) if args.input else None
-		fileOperationModeFull=getFileOperationMode(fileOperationMode)
+		fileOperationModeFull = getFileOperationMode(fileOperationMode)
 
 		fileOperateSet: dict = {}
 		systemCLICommands: str = ""
@@ -433,7 +325,7 @@ def main() -> None:
 		backupCommands: list = []
 		targetFilePaths = []
 		for targetPath in pathListInput:
-			targetFilePath=Path(targetPath)
+			targetFilePath = Path(targetPath)
 			CZFilesToOperatePerSet: list = []
 			CZFilesToOperatePerSetMapping: dict = {}
 			CZFilesSources = None
@@ -442,61 +334,47 @@ def main() -> None:
 			CZFilesToSetAsSource = []
 			if useCommands:
 				if fileOperationMode == "d" or fileOperationMode == "t":
-					targetCommands.append(
-						generateCLICommands(
-							operation=fileOperationModeFull,
-							target=targetFilePath
-						)
-					)
+					targetCommands.append(generateCLICommands(operation=fileOperationModeFull, target=targetFilePath))
 				if fileOperationMode == "o":
 					if args.bd:
-						targetFileBackupPath = PurePath(
-							args.bd
-						) / targetFilePath.name
+						targetFileBackupPath = PurePath(args.bd) / targetFilePath.name
 						backupCommands.append(
-							generateCLICommands(
-								operation="overwrite",
-								target=targetFileBackupPath,
-								source=targetFilePath,
-								toNewFile=True
-							)
+						    generateCLICommands(
+						        operation="overwrite", target=targetFileBackupPath, source=targetFilePath, toNewFile=True
+						    )
 						)
-			
+
 			if fileOperationMode == "o":
 				afsasaf = "\n".join(str(fi) for fi in targetFilePaths)
 				print(afsasaf)
 			if useCommands:
 				if backupCommands:
-					backupCommandsStr='\n'.join(backupCommands)
+					backupCommandsStr = '\n'.join(backupCommands)
 					print("generated backup commands:")
 					for c in backupCommands:
 						print(c)
 					if FileDestination:
 						writeToFile(
-						    str(FileDestination / f"{str(FilePath.name)}-bak.{batchFileExt}"),
-						    backupCommandsStr,
-						    openmode='w',
-						    file_encoding='utf-8'
+						    str(FileDestination / f"{str(FilePath.name)}-bak.{batchFileExt}"), backupCommandsStr,
+						    openmode='w', file_encoding='utf-8'
 						)
 		print("generated commands:")
 		for c in targetCommands:
-			targetCommandsStr='\n'.join(targetCommands)
+			targetCommandsStr = '\n'.join(targetCommands)
 			print(c)
 			writeToFile(
-				str(FileDestination / f"{str(FilePath.name)}-topc.{batchFileExt}"),
-				targetCommandsStr,
-				openmode='w',
-				file_encoding='utf-8'
+			    str(FileDestination / f"{str(FilePath.name)}-topc.{batchFileExt}"), targetCommandsStr, openmode='w',
+			    file_encoding='utf-8'
 			)
 
-				# if CZfileOperationMode == "t":
-				# 	pass
-				# elif CZfileOperationMode == "d":
-				# 	CZFilesToBeDeleted.extend(CZFilesToOperatePerSet)
-				# elif CZfileOperationMode == "o":
-				# 	CZFilesToBeOverwritten.extend(CZFilesToOperatePerSet)
-				# else:
-				# 	print("Unknown file operation mode:", CZfileOperationMode)
+			# if CZfileOperationMode == "t":
+			# 	pass
+			# elif CZfileOperationMode == "d":
+			# 	CZFilesToBeDeleted.extend(CZFilesToOperatePerSet)
+			# elif CZfileOperationMode == "o":
+			# 	CZFilesToBeOverwritten.extend(CZFilesToOperatePerSet)
+			# else:
+			# 	print("Unknown file operation mode:", CZfileOperationMode)
 			# sys.exit()
 		# print(CZJsonFilePath.name)
 		# sys.exit()

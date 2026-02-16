@@ -9,19 +9,19 @@ import math
 import platform
 
 def convert_size(size_bytes):
-    """
+	"""
     Converts a byte value into a human-readable string (B, KB, MB, etc.).
     """
-    if size_bytes == 0:
-        return "0B"
-    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    # Calculate the appropriate unit index using logarithm
-    i = int(math.floor(math.log(size_bytes, 1024)))
-    # Ensure index is within the range of size_name
-    i = min(i, len(size_name) - 1)
-    # Calculate the converted value
-    p = 1024 ** i
-    return f"{round(size_bytes / p, 2)} {size_name[i]}"
+	if size_bytes == 0:
+		return "0B"
+	size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+	# Calculate the appropriate unit index using logarithm
+	i = int(math.floor(math.log(size_bytes, 1024)))
+	# Ensure index is within the range of size_name
+	i = min(i, len(size_name) - 1)
+	# Calculate the converted value
+	p = 1024**i
+	return f"{round(size_bytes / p, 2)} {size_name[i]}"
 
 # 用于解决读取文件时的编码问题
 def get_encoding(file_path):
@@ -32,7 +32,6 @@ def get_encoding(file_path):
 		charset = chardet.detect(data)['encoding']
 	return charset
 
-
 def calculate_sha256(file_path: str) -> str:
 	import hashlib
 
@@ -41,7 +40,6 @@ def calculate_sha256(file_path: str) -> str:
 		for chunk in iter(lambda: f.read(8192), b''):
 			hash_sha256.update(chunk)
 	return hash_sha256.hexdigest()
-
 
 def compare_version(ver1, ver2):
 	version1_parts = ver1.split('.')
@@ -58,23 +56,15 @@ def compare_version(ver1, ver2):
 
 	return 0
 
-
 class accelerator:
 	def __call__(self, r):
-		domain_list = [
-			'steamcommunity-a.akamaihd.net',
-		]
+		domain_list = ['steamcommunity-a.akamaihd.net', ]
 		match = re.search(r'(https?://)([^/\s]+)', r.url)
 		if match:
 			domain = match.group(2)
 			r.headers['Host'] = domain
-			r.url = re.sub(
-				r'(https?://)([^/\s]+)(.*)',
-				r'\1' + random.choice(domain_list) + r'\3',
-				r.url,
-			)
+			r.url = re.sub(r'(https?://)([^/\s]+)(.*)', r'\1' + random.choice(domain_list) + r'\3', r.url, )
 		return r
-
 
 def is_subsequence(s, t):
 	t_index = 0
@@ -85,18 +75,14 @@ def is_subsequence(s, t):
 		t_index += 1
 	return s_index == len(s)
 
-
 def debugprint(printvar):  # wip
 	print(f'{printvar}')
 	for attr in dir(printvar):
 		print('testasfa.%s = %r' % (attr, getattr(printvar, attr)))
 	return
 
-
-def writeToFile(
-	file_path, writeContext, openmode: str = 'a', file_encoding: str = 'utf-8'
-):  # wip
-	file_path=Path(file_path)
+def writeToFile(file_path, writeContext, openmode: str = 'a', file_encoding: str = 'utf-8'):  # wip
+	file_path = Path(file_path)
 	if file_encoding == 'auto':
 		file_encoding = get_encoding(file_path)
 	file_path_dir = Path(PurePath(file_path).parent)
@@ -113,8 +99,8 @@ def writeToFile(
 		elif openmode == 'w':
 			file.write(str(writeContext))
 
-def readFromFile(file_path)->str:
-	file_path=Path(file_path)
+def readFromFile(file_path) -> str:
+	file_path = Path(file_path)
 	if not Path(file_path).exists():
 		raise Exception('File not exist.')
 	elif not file_path.is_file():
@@ -122,8 +108,8 @@ def readFromFile(file_path)->str:
 	with file_path.open(mode='r', encoding=get_encoding(file_path)) as file:
 		return file.read()
 
-def readFromFileE(file_path,file_encoding)->str:
-	file_path=Path(file_path)
+def readFromFileE(file_path, file_encoding) -> str:
+	file_path = Path(file_path)
 	if not Path(file_path).exists():
 		raise Exception('File not exist.')
 	elif not file_path.is_file():
@@ -142,9 +128,7 @@ def getFileOperationMode(fileOperationMode):
 		print("File operation mode from argument:", fileOperationModeFull)
 		return fileOperationModeFull
 	else:
-		print(
-			"No valid file operation mode provided, won't perform any file operations."
-		)
+		print("No valid file operation mode provided, won't perform any file operations.")
 
 def getBatchFileExt():
 	SystemType = platform.system()
