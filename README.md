@@ -9,19 +9,20 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -sd, -source-dir SD   Set source directory paths in json that will be processed. Separate multiple directories with
-                        comma.
-  -td, -target-dir TD   Optional, set target directory paths in json that will be processed, treat all files in
-                        duplicate sets as targets if blank. Separate multiple directories with comma.
+  -sd, -source-dir SD   Set source directories and match source items in them for json will be processed. Separate
+                        multiple directories with comma.
+  -td, -target-dir TD   Set target directories and match target items in them for json will be processed. Treat all
+                        files in duplicate sets as targets if blank. Separate multiple directories with comma.
   -tdf, -target-dir-file TDF
-                        Optional, target directory paths in json that will be processed, treat all files in duplicate
-                        sets as targets if blank. Read directories from given file.
+                        Read target directories from each line of a plain text file and match target items in them for
+                        json will be processed. Treat all files in duplicate sets as targets if blank. Read
+                        directories from the given file.
   -ed, -excluded-dir ED
-                        [Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple
-                        directories with comma.
+                        [Placeholder Option]Excluded directories will be ignored for json will be processed. Separate
+                        multiple directories with comma.
   -edf, -excluded-dir-file EDF
-                        [Placeholder Option]Excluded directory paths in json that will be ignored. Read directories
-                        from given file.
+                        [Placeholder Option]Excluded directories will be ignored for json will be processed. Read
+                        directories from the given file.
   -r, -read             Optional, test
   -dry                  [Placeholder Option]Do not perform any file operations.
   -g, -get-metadata     [Placeholder Option]Get file metadata by file type.
@@ -31,7 +32,7 @@ options:
   -d, -destination D    Set destination for saving generated json files.
   -bd, -backup-destination BD
                         backup-destination.
-  -p, -json-prefix P    Optional, set prefix of filenames for generated json files to save.
+  -p, -json-prefix P    Set prefix of filenames for generated json files to save.
   -rs, -real-sizes      Optional, use real file sizes.
   -db, -debug           [Placeholder Option]Show debug information.
   -c, -command          Give commands for file operations instead of using python.
