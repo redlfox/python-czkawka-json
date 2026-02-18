@@ -125,23 +125,23 @@ def main() -> None:
 	parser.add_argument("input", nargs="?", default=None, help="Czkawka JSON file path to process.")
 	parser.add_argument(
 	    "-sd", "-source-dir", default=None,
-	    help="Set source directory paths in json that will be processed. Separate multiple directories with comma."
+	    help="Set source directories and match source items in them for json will be processed. Separate multiple directories with comma."
 	)
 	parser.add_argument(
 	    "-td", "-target-dir", default=None,
-	    help="Optional, set target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
+	    help="Set target directories and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Separate multiple directories with comma."
 	)
 	parser.add_argument(
 	    "-tdf", "-target-dir-file", default=None,
-	    help="Optional, target directory paths in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file."
+	    help="Read target directories from each line of a plain text file and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Read directories from the given file."
 	)
 	parser.add_argument(
 	    "-ed", "-excluded-dir", default=None,
-	    help="[Placeholder Option]Excluded directory paths in json that will be ignored. Separate multiple directories with comma."
+	    help="[Placeholder Option]Excluded directories will be ignored for json will be processed. Separate multiple directories with comma."
 	)
 	parser.add_argument(
 	    "-edf", "-excluded-dir-file", default=None,
-	    help="[Placeholder Option]Excluded directory paths in json that will be ignored. Read directories from given file."
+	    help="[Placeholder Option]Excluded directories will be ignored for json will be processed. Read directories from the given file."
 	)
 	parser.add_argument("-r", "-read", action="store_true", help="Optional, test")
 	parser.add_argument("-dry", action="store_true", help="[Placeholder Option]Do not perform any file operations.")
@@ -161,7 +161,7 @@ def main() -> None:
 	parser.add_argument("-d", "-destination", default=None, help="Set destination for saving generated json files.")
 	parser.add_argument("-bd", "-backup-destination", default=None, help="backup-destination.")
 	parser.add_argument(
-	    "-p", "-json-prefix", default=None, help="Optional, set prefix of filenames for generated json files to save."
+	    "-p", "-json-prefix", default=None, help="Set prefix of filenames for generated json files to save."
 	)
 	parser.add_argument("-rs", "-real-sizes", action="store_true", help="Optional, use real file sizes.")
 	parser.add_argument("-db", "-debug", action="store_true", help="[Placeholder Option]Show debug information.")
