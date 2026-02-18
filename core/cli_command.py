@@ -1,6 +1,7 @@
-from pathlib import Path, PurePath
 import platform
 import re
+from pathlib import Path, PurePath
+
 
 def fixCliPath(PathStr: str):
 	SystemType = platform.system()

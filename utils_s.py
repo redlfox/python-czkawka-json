@@ -1,12 +1,14 @@
 # Modified from https://github.com/Steamauto/Steamauto
 import os
-from pathlib import Path, PurePath
-import random
-import re
 
 # import math
 import platform
+import random
+import re
+from pathlib import Path, PurePath
+
 from core.files_info import get_encoding
+
 
 def compare_version(ver1, ver2):
 	version1_parts = ver1.split('.')

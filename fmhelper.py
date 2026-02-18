@@ -1,19 +1,29 @@
-from mimetypes import init
-import sys
 # import time
 import re
+import sys
+from mimetypes import init
+
 try:
 	import orjson
 except ImportError:
 	import json as orjson  # noqa: F401
-from pprint import pprint
-from pathlib import Path, PurePath
 import argparse
-# import configparser
-from utils_s import writeToFile, readFromFile, readFromFileE, getFileOperationMode, getBatchFileExt
-from core.files_info import get_encoding, convert_size  # noqa: F401
-from core.cli_command import generateCLICommands
+from pathlib import Path, PurePath
+from pprint import pprint
+
 import pandas as pd
+from core.cli_command import generateCLICommands
+from core.files_info import convert_size, get_encoding  # noqa: F401
+
+# import configparser
+from utils_s import (
+	getBatchFileExt,
+	getFileOperationMode,
+	readFromFile,
+	readFromFileE,
+	writeToFile,
+)
+
 
 def main() -> None:
 

@@ -1,9 +1,12 @@
-import os
-import chardet
-import math
 import hashlib
+import math
+import os
+
+import chardet
+
 
 # 用于解决读取文件时的编码问题
+# But is not very reliable. May return wrong encoding.
 def get_encoding(file_path):
 	if not os.path.exists(file_path):
 		return 'utf-8'
