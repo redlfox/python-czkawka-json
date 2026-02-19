@@ -1,0 +1,9 @@
+indent-width = 4
+line-length = 120
+[format]
+# Disable reformatting of code snippets in docstrings.
+docstring-code-format = false
+docstring-code-line-length = 60
+# Use 4 space instead of tabs indentation.
+indent-style = "space"
+quote-style = "preserve"

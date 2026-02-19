@@ -54,7 +54,7 @@ def getBiggestFile(CZFileItems: list) -> None:
 
 
 def setFitSourceAndTargetFiles(
-    CZFileItems: list, CAFileSource: dict = {}
+    CZFileItems: list, CZFileSource: dict = {}
 ) -> None:
     CZFilesEqualSizeSorted = []
     CZFilesSorting = []
