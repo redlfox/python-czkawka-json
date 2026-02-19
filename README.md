@@ -23,7 +23,7 @@ The **Czkawka json tool** is a specialized utility designed to process and manag
 ## Usage
 ### Core Command
 - python-czkawka-json.py
-```bash
+```
 usage: python-czkawka-json.py [-h] [-sd SOURCE_DIR] [-td TARGET_DIR] [-tdf TARGET_DIR_FILE] [-ed EXCLUDED_DIR]
                               [-edf EXCLUDED_DIR_FILE] [-r] [-dry] [-g] [-m {d,t,o}] [-nb] [-s] [-d DESTINATION]
                               [-bd BACKUP_DESTINATION] [-p JSON_PREFIX] [-rs] [-db] [-c] [-o] [-i] [-cs] [-ns]
@@ -75,7 +75,7 @@ options:
   -ns, --no-slc         Skip sets where all files are currently marked as targets (safety check).
 ```
 Example:
-```
+```bash
 # Generate commands to trash matched target files in the given json if atleast one source file matched.
 python3 python-czkawka-json.py -sd [source_path_string] -td [target_path_string] -ns -o -m t -c [json_file]
 
