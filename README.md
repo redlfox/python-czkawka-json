@@ -127,5 +127,6 @@ This project follows strict coding and naming conventions. Before contributing, 
 - **Commit Style:** Ensure commit messages are concise and explain the "why" behind changes.
 
 ## License
-[Insert License Type - e.g., MIT]
-© 2026 Czkawka Json Tool Contributors
+MIT License
+
+Copyright © 2026 Redlfox
