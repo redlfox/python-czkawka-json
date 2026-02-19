@@ -10,10 +10,14 @@ The **Czkawka json tool** is a specialized utility designed to process and manag
 - **Data Integrity:** The tool relies on the structure of the JSON exported by Czkawka. Modifications to the source JSON may cause unexpected behavior.
 
 ## Installation
-1.  **Python:** Ensure Python 3.10+ is installed.
+1.  **Python:** Ensure Python 3.6+ is installed.
 2.  **Dependencies:**
     ```bash
     pip install pandas orjson
+    ```
+    Alternatively, you can use following command:
+    ```bash
+        python3 -m pip install pandas orjson
     ```
 3.  **Formatting (Optional):**
     ```bash

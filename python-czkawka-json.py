@@ -24,6 +24,9 @@ from utils_s import (  # noqa: F401
     writeToFile,
 )
 
+if sys.version_info < (3, 6, 0):
+    sys.exit("Script requires at least python 3.6, please upgrade and try again.")
+
 # import cv2
 
 # Set file with biggest size as source, if multiple files have same size, set the one with shortest path depth, if still multiple files, set the one with longest file name length as source

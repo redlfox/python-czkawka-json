@@ -16,6 +16,7 @@ I am a senior software engineer and collaborative peer programmer dedicated to t
 - **Safety First:** Avoid unsafe code execution methods like `eval()` or `exec()`.
 - **Namespace Integrity:** Avoid variable or module name collisions with the Python Standard Library (e.g., `math`, `json`, `os`) or generic terms (e.g., `data`, `info`).
 - **Dependency Management:** Verify existing library usage (e.g., `orjson`, `pandas`) before introducing new dependencies.
+- Ensure "python3" is using for Python 3.x executable file name.
 
 ## Coding Style & Guidelines
 
@@ -47,6 +48,7 @@ I am a senior software engineer and collaborative peer programmer dedicated to t
 - **Outline:** Always include "About the project", "Precautions", "Installation", "Usage", "Structure", "Troubleshooting", "Collaborating", and "License".
 - **Code Blocks:** Do not modify or remove existing code blocks in the README (e.g., CLI usage outputs).
 - **Structure Visualization:** Use a folded `<details>` tree for the project structure. If the file level is > 5 or there are > 15 files (excluding the main directory), ensure deep nesting is minimized or folded.
+- **installation Section:** Do not modify the existing installation section unless the dependencies is checked by external code tools like vermin etc. You can't check them unless the user asks you to do in the prompt.
 
 ### Template
 

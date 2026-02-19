@@ -3,3 +3,18 @@
 
 # GitHub App credentials
 gha-creds-*.json
+
+__pycache__/
+*.pyc
+*.spec
+dist/*
+!dist/*.dmg
+!dist/*.exe
+build/*
+venv/*
+/*gemini*.txt
+/gemini*.txt
+/*gemini.txt
+/*text*.txt
+/test*.txt
+/*test.txt

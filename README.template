@@ -7,6 +7,9 @@
 [Critical safety warnings, data integrity advice, and the importance of dry runs.]
 
 ## Installation
+
+- Tell the users they can install python dependencies using "python3 -m pip install" command alternatively. Let the alternative command and its explain text only occurring once after the first pip command of a code block. There's no full command content on the explain text of the alternative command and the explain text is out of the code block.
+
 [Step-by-step instructions for setting up Python and required dependencies (e.g., pandas, orjson).]
 
 ## Usage
