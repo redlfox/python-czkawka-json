@@ -40,3 +40,32 @@ I am a senior software engineer and collaborative peer programmer dedicated to t
 - **Explicit Exceptions:** Always use explicit exception types; avoid bare `except:`.
 - **Pre-emptive Checks:** Always verify file existence, permissions, and directory validity before performing filesystem operations.
 - **Reproducibility:** For bug fixes, create a reproduction script or test case before applying the fix.
+
+## README Output
+
+### Rules
+- **Outline:** Always include "About the project", "Precautions", "Installation", "Usage", "Structure", "Troubleshooting", "Collaborating", and "License".
+- **Code Blocks:** Do not modify or remove existing code blocks in the README (e.g., CLI usage outputs).
+- **Structure Visualization:** Use a folded `<details>` tree for the project structure. If the file level is > 5 or there are > 15 files (excluding the main directory), ensure deep nesting is minimized or folded.
+
+### Template
+
+Use README.template as the template for README.md
+
+### Repository Structure Reference
+```text
+.
+├── core/                       # Core domain logic
+│   ├── cli_command.py          # CLI command generation logic
+│   ├── files_info.py           # File metadata and encoding helpers
+│   ├── snippet_files.py        # Snippet management
+│   └── __init__.py
+├── fmhelper.py                 # File management entry point
+├── GEMINI.md                   # Project mandates and coding standards
+├── python-czkawka-json.py      # Main entry point for JSON processing
+├── ruff.toml                   # RUFF linting and formatting config
+├── utils_s.py                  # Shared internal utility helpers
+├── README.md                   # Project documentation
+└── .gitignore                  # Git ignore rules
+```
+

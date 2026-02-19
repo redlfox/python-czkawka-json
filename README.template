@@ -1,0 +1,36 @@
+# Project Name
+
+## About the project
+[A concise description of the tool's purpose, its relationship with Czkawka, and core capabilities.]
+
+## Precautions
+[Critical safety warnings, data integrity advice, and the importance of dry runs.]
+
+## Installation
+[Step-by-step instructions for setting up Python and required dependencies (e.g., pandas, orjson).]
+
+## Usage
+### Core Command
+- [Primary script name]
+[Exact output of the `--help` command for the primary script.]
+
+### Examples
+[Practical command examples for common workflows like trashing, overwriting, or space calculation.]
+
+## Structure
+<details>
+<summary>Project Repository Tree</summary>
+
+```text
+[A manually maintained or generated file tree with brief comments for each key file.]
+```
+</details>
+
+## Troubleshooting
+[Common errors (e.g., missing dependencies, JSON structure issues) and their solutions.]
+
+## Collaborating
+[Guidelines for contributors, emphasizing adherence to GEMINI.md naming and formatting standards.]
+
+## License
+[License type and copyright information.]
