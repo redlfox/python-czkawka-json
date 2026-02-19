@@ -244,13 +244,13 @@ With the -o argument provided and other options satisfied, target files will be 
         "-o",
         "--organize",
         action="store_true",
-        help="Run the organization logic to identify source and target files for every set and process them.",
+        help="Run the organization mode to identify source and target files for every set and do file operations with them from Czkawka json files. Can't use along with -i flag.",
     )
     parser.add_argument(
         "-i",
         "--interact",
         action="store_true",
-        help="Enable interactive filtering (e.g., verifying file existence).",
+        help="Run the interactive to read info or filtering (e.g., verifying file existence) from Czkawka json files. Can't use along with -o flag.",
     )
     parser.add_argument(
         "-cs",
