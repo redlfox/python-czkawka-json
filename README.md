@@ -68,8 +68,8 @@ options:
   -rs, --real-sizes     Use actual file sizes instead of metadata from the JSON.
   -db, --debug          [Placeholder]Display verbose debug information during execution.
   -c, --command         Generate shell commands instead of performing actions directly via Python.
-  -o, --organize        Run the organization logic to identify source and target files for every set and process them.
-  -i, --interact        Enable interactive filtering (e.g., verifying file existence).
+  -o, --organize        Run the organization mode to identify source and target files for every set and do file operations with them from Czkawka json files. Can't use along with -i flag.
+  -i, --interact        Run the interactive to read info or filtering (e.g., verifying file existence) from Czkawka json files. Can't use along with -o flag.
   -cs, --calculate-space
                         Calculate the maxinum releasable space from Czkawka json files.
   -ns, --no-slc         Skip sets where all files are currently marked as targets (safety check).
