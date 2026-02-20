@@ -72,10 +72,6 @@ def generateCLICommands(
     else:
         print("Unknown file operation:", operation)
         return ""
-    if not (
-        SystemType == "Linux"
-        or SystemType == "Darwin"
-        or SystemType == "Windows"
-    ):
+    if not (SystemType == "Linux" or SystemType == "Darwin" or SystemType == "Windows"):
         print("Unsupported system type for file operations:", SystemType)
         return ""

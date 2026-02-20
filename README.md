@@ -1,4 +1,4 @@
-# Czkawka json tool
+# Czkawka Json Tool
 
 ## About the project
 The **Czkawka json tool** is a specialized utility designed to process and manage duplicate file information exported from [Czkawka](https://github.com/qarmin/czkawka). It allows users to filter, organize, and automate file operations (such as trashing, deleting, or overwriting) based on duplicate sets. The tool can intelligently select "source" and "target" files using customizable logic (e.g., file size, path depth) and generate CLI commands for safer bulk operations.
@@ -15,10 +15,8 @@ The **Czkawka json tool** is a specialized utility designed to process and manag
     ```bash
     pip install pandas orjson
     ```
-    Alternatively, you can use following command:
-    ```bash
-        python3 -m pip install pandas orjson
-    ```
+    Alternatively, you can install python dependencies using `python3 -m pip install` command.
+
 3.  **Formatting (Optional):**
     ```bash
     pip install ruff
@@ -27,9 +25,8 @@ The **Czkawka json tool** is a specialized utility designed to process and manag
 ## Usage
 ### Core Command
 - python-czkawka-json.py
-```
-usage: python-czkawka-json.py [-h] [-sd SOURCE_DIR] [-td TARGET_DIR] [-tdf TARGET_DIR_FILE] [-ed EXCLUDED_DIR]
-                              [-edf EXCLUDED_DIR_FILE] [-r] [-dry] [-g] [-m {d,t,o}] [-nb] [-s] [-d DESTINATION]
+```text
+usage: python-czkawka-json.py [-h] [-sd SOURCE_DIR] [-td TARGET_DIR] [-tdf TARGET_DIR_FILE] [-ed EXCLUDED_DIR] [-edf EXCLUDED_DIR_FILE] [-r] [--dry] [-e] [-g] [-m {d,t,o}] [-nb] [-s] [-d DESTINATION]
                               [-bd BACKUP_DESTINATION] [-p JSON_PREFIX] [-rs] [-db] [-c] [-o] [-i] [-cs] [-ns]
                               [input]
 
@@ -44,18 +41,19 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -sd, --source-dir SOURCE_DIR
-                        Comma-separated list of directories to treat as 'source' locations.
+                        Comma-separated list of directories to treat as 'source' locations for json will be processed.
                         Files in these directories are prioritized as originals.
   -td, --target-dir TARGET_DIR
-                        Set target directories and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Separate multiple directories with comma.
+                        Comma-separated list of directories to treat as 'target' locations for json will be processed. Treat all files in duplicate sets as targets if no arguments of -td or -tdf given.
   -tdf, --target-dir-file TARGET_DIR_FILE
-                        Read target directories from each line of a plain text file and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Read directories from the given file.
+                        Path to a text file containing list of directories to treat as 'target' locations for json will be processed. Treat all files in duplicate sets as targets if no -arguments of -td or -tdf given. 
   -ed, --excluded-dir EXCLUDED_DIR
                         [Placeholder] Comma-separated list of directories to ignore during processing.
   -edf, --excluded-dir-file EXCLUDED_DIR_FILE
-                        [Placeholder] Path to a text file containing directories to ignore during processing.
+                        [Placeholder] Path to a text file containing list of directories to ignore during processing.
   -r, --read            Optional: test
-  -dry                  Dry run: Simulate operations without modifying the filesystem.
+  --dry                 [Placeholder] Dry run: Simulate operations without modifying the filesystem.
+  -e, --encoding        Encoding to use when reading and writing files. (e.g., utf-8, ascii, gbk) Use utf-8 encoding by default.
   -g, --get-metadata    [Placeholder] Retrieve additional file metadata (e.g., bitrates, resolutions).
   -m, --mode {d,t,o}    Operation mode:
                           d: Delete files permanently
@@ -78,16 +76,56 @@ options:
                         Calculate the maxinum releasable space from Czkawka json files.
   -ns, --no-slc         Skip sets where all files are currently marked as targets (safety check).
 ```
-Example:
-```bash
-# Generate commands to trash matched target files in the given json if atleast one source file matched.
-python3 python-czkawka-json.py -sd [source_path_string] -td [target_path_string] -ns -o -m t -c [json_file]
 
-# Generate a new json and save to [FileDestination] with same filename. And calculate releasable space from the new json.
-python3 python-czkawka-json.py -i -cs -d [FileDestination] [json_file]
+### File Management Helper
+- fmhelper.py
+```text
+usage: fmhelper.py [-h] [-sd SOURCE_DIR] [-td TARGET_DIR] [-tdf TARGET_DIR_FILE] [-ed EXCLUDED_DIR] [-edf EXCLUDED_DIR_FILE] [-r] [--dry] [-e] [-fe] [-ff] [-m MODE] [-nb] [-s] [-d DESTINATION]
+                   [-bd BACKUP_DESTINATION] [-p JSON_PREFIX] [-rs] [-db] [-c] [-o] [-i] [-cs] [-ns]
+                   [input]
+
+Tool to process files.
+
+positional arguments:
+  input                 file path to process.
+
+options:
+  -h, --help            show this help message and exit
+  -sd, --source-dir SOURCE_DIR
+                        Comma-separated list of directories to treat as 'source' locations.
+  -td, --target-dir TARGET_DIR
+                        Comma-separated list of directories to treat as 'target' locations.
+  -tdf, --target-dir-file TARGET_DIR_FILE
+                        Optional: target directories in json that will be processed, treat all files in duplicate sets as targets if blank. Read directories from given file.
+  -ed, --excluded-dir EXCLUDED_DIR
+                        Optional: Comma-separated list of ignored directories.
+  -edf, --excluded-dir-file EXCLUDED_DIR_FILE
+                        [Placeholder] Path to a text file containing list of directories to ignore.
+  -r, -read             Optional: test
+  --dry                 [Placeholder] Dry run: Simulate operations without modifying the filesystem.
+  -e, --encoding        Encoding to use when reading and writing files. (e.g., utf-8, ascii, gbk) Use utf-8 encoding by default.
+  -fe, --filter-exist   Filter to include existing files and folders.
+  -ff, --filter-file    Filter to include existing files.
+  -m, --mode MODE       Optional: file operation mode. "d" for delete, "t" for trash, "o" for overwrite.
+  -nb, --no-backup      Optional: do not create backup before overwrite files.
+  -s, --skip-compare    Optional: do not compare files in duplicate sets to filter files for operation.
+  -d, --destination DESTINATION
+                        Optional: set destination for saving generated json files.
+  -bd, --backup-destination BACKUP_DESTINATION
+                        backup-destination.
+  -p, --json-prefix JSON_PREFIX
+                        Optional: set prefix of filenames for generated json files to save.
+  -rs, --real-sizes     Optional: use real file sizes.
+  -db, --debug          Optional: show debug information.
+  -c, --command         Optional: give commands for file operations instead of using python.
+  -o, --organize        Organize files from files.
+  -i, --interact        Interact with files.
+  -cs, --calculate-space
+                        Calculate releasable space from files.
+  -ns, --no-slc         test.
 ```
 
-### Common Examples
+### Examples
 - **Preview Operations:** Generate a batch script to trash files instead of deleting them directly.
   ```bash
   python python-czkawka-json.py -sd "/path/to/source" -td "/path/to/target" -o -m t -c duplicates.json
@@ -96,8 +134,20 @@ python3 python-czkawka-json.py -i -cs -d [FileDestination] [json_file]
   ```bash
   python python-czkawka-json.py -i -cs duplicates.json
   ```
+```bash
+# Generate commands to trash matched target files in the given json if atleast one source file matched.
+python3 python-czkawka-json.py -sd [source_path_string] -td [target_path_string] -ns -o -m t -c [json_file]
 
-## Structure
+# Generate a new json and save to [FileDestination] with same filename. And calculate releasable space from the new json.
+python3 python-czkawka-json.py -i -cs -d [FileDestination] [json_file]
+```
+
+## Technologies
+- Python 3
+- Pandas (for data processing)
+- orjson (for high-performance JSON parsing)
+
+## Project Structure
 <details>
 <summary>Project Repository Tree</summary>
 
@@ -106,14 +156,15 @@ python3 python-czkawka-json.py -i -cs -d [FileDestination] [json_file]
 ├── core/                       # Core domain logic
 │   ├── cli_command.py          # CLI command generation logic
 │   ├── files_info.py           # File metadata and encoding helpers
-│   ├── snippet_files.py
+│   ├── files_op.py             # File operations (delete, trash, overwrite)
+│   ├── simple_snippets.py      # Snippet management
 │   └── __init__.py
 ├── fmhelper.py                 # File management entry point
 ├── GEMINI.md                   # Project mandates and coding standards
 ├── python-czkawka-json.py      # Main entry point for JSON processing
 ├── ruff.toml                   # RUFF linting and formatting config
-├── utils_s.py                  # Shared internal utility helpers
 ├── README.md                   # Project documentation
+├── LICENSE                     # MIT License
 └── .gitignore                  # Git ignore rules
 ```
 </details>
@@ -130,7 +181,10 @@ This project follows strict coding and naming conventions. Before contributing, 
 - **Formatting:** Code must be formatted using RUFF.
 - **Commit Style:** Ensure commit messages are concise and explain the "why" behind changes.
 
+## Tools Used
+Gemini
+
 ## License
-MIT License
+Czkawka Json Tool is licensed under the [MIT License](LICENSE)
 
 Copyright © 2026 Redlfox

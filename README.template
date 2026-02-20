@@ -19,8 +19,9 @@
 
 ### Examples
 [Practical command examples for common workflows like trashing, overwriting, or space calculation.]
+## Technologies
 
-## Structure
+## Project Structure
 <details>
 <summary>Project Repository Tree</summary>
 
@@ -34,6 +35,8 @@
 
 ## Collaborating
 [Guidelines for contributors, emphasizing adherence to GEMINI.md naming and formatting standards.]
-
+## Tools Used
+Gemini
 ## License
-[License type and copyright information.]
+[PROJECT_NAME is licensed under the [LICENSE_FULL_NAME](LICENSE_NAME)]
+[Copyright © 2026 Redlfox]

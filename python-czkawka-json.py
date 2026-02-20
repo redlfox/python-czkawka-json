@@ -14,12 +14,11 @@ from pprint import pprint
 
 import pandas as pd
 from core.cli_command import generateCLICommands
-from core.files_info import convert_size, get_encoding
+from core.files_info import convertSize
 
 # import configparser
-from utils_s import (  # noqa: F401
+from core.files_op import (  # noqa: F401
     getFileOperationMode,
-    readFromFile,
     readFromFileE,
     writeToFile,
 )
@@ -153,19 +152,19 @@ With the -o argument provided and other options satisfied, target files will be 
         "-sd",
         "--source-dir",
         default=None,
-        help="Comma-separated list of directories to treat as 'source' locations.\nFiles in these directories are prioritized as originals.",
+        help="Comma-separated list of directories to treat as 'source' locations for json will be processed.\nFiles in these directories are prioritized as originals.",
     )
     parser.add_argument(
         "-td",
         "--target-dir",
         default=None,
-        help="Set target directories and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Separate multiple directories with comma.",
+        help="Comma-separated list of directories to treat as 'target' locations for json will be processed. Treat all files in duplicate sets as targets if no arguments of -td or -tdf given.",
     )
     parser.add_argument(
         "-tdf",
         "--target-dir-file",
         default=None,
-        help="Read target directories from each line of a plain text file and match target items in them for json will be processed. Treat all files in duplicate sets as targets if blank. Read directories from the given file.",
+        help="Path to a text file containing list of directories to treat as 'target' locations for json will be processed. Treat all files in duplicate sets as targets if no -arguments of -td or -tdf given.",
     )
     parser.add_argument(
         "-ed",
@@ -177,13 +176,19 @@ With the -o argument provided and other options satisfied, target files will be 
         "-edf",
         "--excluded-dir-file",
         default=None,
-        help="[Placeholder] Path to a text file containing directories to ignore during processing.",
+        help="[Placeholder] Path to a text file containing list of directories to ignore during processing.",
     )
     parser.add_argument("-r", "--read", action="store_true", help="Optional: test")
     parser.add_argument(
-        "-dry",
+        "--dry",
         action="store_true",
-        help="Dry run: Simulate operations without modifying the filesystem.",
+        help="[Placeholder] Dry run: Simulate operations without modifying the filesystem.",
+    )
+    parser.add_argument(
+        "-e",
+        "--encoding",
+        action="store_true",
+        help="Encoding to use when reading and writing files. (e.g., utf-8, ascii, gbk) Use utf-8 encoding by default.",
     )
     parser.add_argument(
         "-g",
@@ -286,14 +291,16 @@ With the -o argument provided and other options satisfied, target files will be 
         cc1 += 1
     if cc1 > 1:
         sys.exit("Can not use mutiple mode at same time.")
+
+    fileEncoding = args.e if args.e else "utf-8"
+
     try:
-        CZJsonFromFile = orjson.loads(readFromFileE(CZJsonFilePath, "utf-8"))
+        CZJsonFromFile = orjson.loads(readFromFileE(CZJsonFilePath, fileEncoding))
     except Exception as e:
         sys.exit(f"Failed to load json file. Error: {e}")
         return None
+
     isListJson, n2LevelInSets = detectJsonStructure(CZJsonFromFile)
-    # sys.exit()
-    # with open(CZJsonFilePath, "r", encoding=get_encoding(CZJsonFilePath)) as f:
     CZJsonDestination = PurePath()
     if args.d:
         CZJsonDestination = PurePath(args.d)
@@ -322,7 +329,7 @@ With the -o argument provided and other options satisfied, target files will be 
                 sys.exit(f"Failed to parse target directories. Error: {e}")
                 return None
         if args.tdf:
-            dirsToSetAsTarget.extend((readFromFile(args.tdf)).splitlines())
+            dirsToSetAsTarget.extend((readFromFileE(args.tdf)).splitlines())
         if dirsToSetAsTarget:
             print("Target directories from argument: ")
             pprint(dirsToSetAsTarget)
@@ -334,7 +341,7 @@ With the -o argument provided and other options satisfied, target files will be 
                 sys.exit()
                 return None
         if args.edf:
-            excludedDirs.extend((readFromFile(args.edf)).splitlines())
+            excludedDirs.extend((readFromFileE(args.edf)).splitlines())
         if excludedDirs:
             print("Excluded directories from argument: ")
             pprint(excludedDirs)
@@ -385,7 +392,6 @@ With the -o argument provided and other options satisfied, target files will be 
                     # TODO: check if biggest file missing.
                     break
                 for dst in dirsToSetAsTarget:
-                    # pattern = rf"^{re.escape(re.sub(r"(\\|/)$","",dst))}(\\|/).+" # Causes IndexError: tuple index out of range in YAPF
                     pattern = re.escape(re.sub(r"(\\|/)$", "", dst))
                     pattern = rf"^{pattern}(\\|/).+"
                     # TODO: Handle files with case conflict in a same directory.
@@ -423,7 +429,6 @@ With the -o argument provided and other options satisfied, target files will be 
                             if dirsToSetAsSource:
                                 sourceMatched = False
                                 for dss in dirsToSetAsSource:
-                                    # pattern = rf"^{re.escape(re.sub(r"(\\|/)$","",dss))}(\\|/).+" # Causes IndexError: tuple index out of range in YAPF
                                     pattern = re.escape(re.sub(r"(\\|/)$", "", dss))
                                     pattern = rf"^{pattern}(\\|/).+"
                                     if re.match(pattern, fi['path'], flags=re.IGNORECASE):
@@ -510,10 +515,7 @@ With the -o argument provided and other options satisfied, target files will be 
                 print(c)
 
     if args.i:
-        if isListJson:
-            CZJsonNew = []
-        else:
-            CZJsonNew = {}
+        CZJsonNew = [] if isListJson else {}
         CZJsonFromFileItemIndex = 0
         for duplicateSetKey in CZJsonFromFile:
             # print(duplicateSetKey)
@@ -556,9 +558,9 @@ With the -o argument provided and other options satisfied, target files will be 
         if CZJsonDestination and not args.dry:
             writeToFile(
                 str(CZJsonDestination / CZJsonFilePath.name),
-                orjson.dumps(CZJsonNew, option=orjson.OPT_INDENT_2).decode('utf-8'),
+                orjson.dumps(CZJsonNew, option=orjson.OPT_INDENT_2).decode(fileEncoding),
                 openmode='w',
-                file_encoding='utf-8',
+                file_encoding=fileEncoding,
             )
         else:
             if args.dry:
@@ -586,7 +588,7 @@ With the -o argument provided and other options satisfied, target files will be 
                     releasableSpace += fi["size"]
                 CZJsonInputItemIndex += 1
 
-            print("Releasable space:", convert_size(releasableSpace))
+            print("Releasable space:", convertSize(releasableSpace))
 
 
 if __name__ == "__main__":

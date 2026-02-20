@@ -49,6 +49,7 @@ I am a senior software engineer and collaborative peer programmer dedicated to t
 - **Code Blocks:** Do not modify or remove existing code blocks in the README (e.g., CLI usage outputs).
 - **Structure Visualization:** Use a folded `<details>` tree for the project structure. If the file level is > 5 or there are > 15 files (excluding the main directory), ensure deep nesting is minimized or folded.
 - **installation Section:** Do not modify the existing installation section unless the dependencies is checked by external code tools like vermin etc. You can't check them unless the user asks you to do in the prompt.
+- **Updating Context:** Avoid unnecessary changes like generate context already meet the standards. You must read from all file in the repository following .gitignore before updating README context.
 
 ### Template
 

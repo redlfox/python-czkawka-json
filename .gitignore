@@ -4,14 +4,25 @@
 # GitHub App credentials
 gha-creds-*.json
 
+# Python cache files
 __pycache__/
 *.pyc
+
 *.spec
+
+*.exe
+*.dmg
+*.app
+*.deb
+*.appimage
+
 dist/*
 !dist/*.dmg
 !dist/*.exe
 build/*
 venv/*
+
+# Misc
 /*gemini*.txt
 /gemini*.txt
 /*gemini.txt

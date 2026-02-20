@@ -7,11 +7,12 @@ import chardet
 
 # 用于解决读取文件时的编码问题
 # But is not very reliable. May return wrong encoding.
-def get_encoding(file_path):
+def getEncoding(file_path):
     if not os.path.exists(file_path):
         return 'utf-8'
+    file_size = os.path.getsize(file_path)
     with open(file_path, 'rb') as f:
-        data = f.read()
+        data = f.read() if file_size < 100000 else f.read(100000)
         charset = chardet.detect(data)['encoding']
     return charset
 
@@ -25,7 +26,7 @@ def calculate_sha256(file_path: str) -> str:
     return hash_sha256.hexdigest()
 
 
-def convert_size(size_bytes):
+def convertSize(size_bytes):
     """
     Converts a byte value into a human-readable string (B, KB, MB, etc.).
     """
